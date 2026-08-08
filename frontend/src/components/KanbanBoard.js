@@ -1,52 +1,82 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Icon from './Icon';
+
+// Global reference for bulletproof drag-and-drop state transfer
+let activeKanbanDraggedId = null;
 
 const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhatsApp, onPrintInvoice }) => {
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
+  const draggedIdRef = useRef(null);
 
   // Determine status field and available columns
   const statusField = config.statusField || 'status';
-  const fieldObj = config.fields.find((f) => f.name === statusField);
+  const fieldObj = config.fields ? config.fields.find((f) => f.name === statusField) : null;
 
   // Column stage options
   let columns = [];
   if (fieldObj && fieldObj.options) {
     columns = fieldObj.options;
   } else {
-    // Fallback: unique status values present in records
     const uniqueStatuses = Array.from(new Set(records.map((r) => r[statusField]).filter(Boolean)));
     columns = uniqueStatuses.length > 0 ? uniqueStatuses : ['Default'];
   }
 
-  // Handle Drag & Drop
+  // ---- 100% Reliable HTML5 Drag & Drop Event Handlers ----
   const handleDragStart = (e, id) => {
+    activeKanbanDraggedId = id;
     setDraggedId(id);
-    e.dataTransfer.setData('text/plain', String(id));
+    draggedIdRef.current = id;
+    try {
+      e.dataTransfer.setData('text/plain', String(id));
+      e.dataTransfer.setData('text', String(id));
+    } catch (err) {}
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e, columnStatus) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.preventDefault(); // MANDATORY in HTML5 to allow dropping!
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
     if (dragOverColumn !== columnStatus) {
       setDragOverColumn(columnStatus);
     }
   };
 
-  const handleDragLeave = () => {
-    setDragOverColumn(null);
+  const handleDragLeave = (e) => {
+    e.preventDefault();
   };
 
   const handleDrop = (e, columnStatus) => {
     e.preventDefault();
     setDragOverColumn(null);
-    const idStr = e.dataTransfer.getData('text/plain') || draggedId;
-    if (idStr) {
-      const recordId = Number(idStr) || idStr;
+
+    let id = activeKanbanDraggedId;
+    if (id === null || id === undefined) {
+      id = draggedIdRef.current || draggedId;
+      if (id === null || id === undefined) {
+        try {
+          id = e.dataTransfer.getData('text/plain');
+        } catch (err) {}
+      }
+    }
+
+    if (id !== null && id !== undefined && id !== '') {
+      const recordId = isNaN(Number(id)) ? id : Number(id);
       onStatusChange(recordId, columnStatus);
     }
+
+    activeKanbanDraggedId = null;
     setDraggedId(null);
+    draggedIdRef.current = null;
+  };
+
+  const handleDragEnd = () => {
+    activeKanbanDraggedId = null;
+    setDraggedId(null);
+    setDragOverColumn(null);
+    draggedIdRef.current = null;
   };
 
   // Format monetary amounts
@@ -58,13 +88,12 @@ const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhat
   return (
     <div className="kanban-wrapper">
       <div className="kanban-board">
-        {columns.map((colStatus) => {
-          // Filter records belonging to this status column
+        {columns.map((colStatus, colIdx) => {
+          // Filter records belonging to this column stage
           const colRecords = records.filter(
-            (r) => String(r[statusField] || '').toLowerCase() === String(colStatus).toLowerCase()
+            (r) => String(r[statusField] || '').trim().toLowerCase() === String(colStatus || '').trim().toLowerCase()
           );
 
-          // Compute column metric total if valueField exists
           const valueField = config.valueField;
           const totalValue = valueField
             ? colRecords.reduce((sum, r) => sum + (Number(r[valueField]) || 0), 0)
@@ -74,7 +103,7 @@ const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhat
 
           return (
             <div
-              key={colStatus}
+              key={`kanban-col-${colStatus}-${colIdx}`}
               className={`kanban-column ${isOver ? 'drag-over' : ''}`}
               onDragOver={(e) => handleDragOver(e, colStatus)}
               onDragLeave={handleDragLeave}
@@ -91,18 +120,27 @@ const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhat
                 )}
               </div>
 
-              <div className="kanban-column-body">
-                {colRecords.map((r) => {
+              <div
+                className="kanban-column-body"
+                onDragOver={(e) => handleDragOver(e, colStatus)}
+                onDrop={(e) => handleDrop(e, colStatus)}
+              >
+                {colRecords.map((r, rIdx) => {
                   const titleVal = r[config.titleField] || r.name || r.title || `Item #${r.id}`;
                   const subtitleVal = r[config.subtitleField] || r.email || r.company_name;
                   const valAmount = valueField ? r[valueField] : null;
+                  const cardKey = r.id ? `kanban-card-${r.id}` : `kanban-card-${rIdx}`;
 
                   return (
                     <div
-                      key={r.id}
+                      key={cardKey}
                       className={`kanban-card ${draggedId === r.id ? 'is-dragging' : ''}`}
                       draggable="true"
                       onDragStart={(e) => handleDragStart(e, r.id)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => handleDragOver(e, colStatus)}
+                      onDrop={(e) => handleDrop(e, colStatus)}
+                      style={{ cursor: 'grab', userSelect: 'none' }}
                     >
                       <div className="kanban-card-header">
                         <h4 className="kanban-card-title">{titleVal}</h4>
@@ -147,55 +185,42 @@ const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhat
                       </div>
 
                       <div className="kanban-card-footer">
-                        {/* Quick stage selector dropdown */}
-                        <select
-                          className="kanban-stage-select"
-                          value={r[statusField] || colStatus}
-                          onChange={(e) => onStatusChange(r.id, e.target.value)}
-                        >
-                          {columns.map((opt) => (
-                            <option key={opt} value={opt}>
-                              → Move to {opt}
-                            </option>
-                          ))}
-                        </select>
-
                         <div className="kanban-card-actions">
                           {r.phone && (
                             <button
                               type="button"
-                              className="kanban-action-btn whatsapp-btn"
+                              className="kanban-action-btn whatsapp-btn action-tooltip-btn"
                               onClick={() => onWhatsApp(r)}
-                              title="WhatsApp Message"
                             >
                               <Icon name="whatsapp" size={13} />
+                              <span className="action-hover-tag">WhatsApp</span>
                             </button>
                           )}
                           {onPrintInvoice && (r.invoice_number || config.id === 'invoices') && (
                             <button
                               type="button"
-                              className="kanban-action-btn invoice-btn"
+                              className="kanban-action-btn invoice-btn action-tooltip-btn"
                               onClick={() => onPrintInvoice(r)}
-                              title="Print GST Invoice"
                             >
                               <Icon name="invoice" size={13} />
+                              <span className="action-hover-tag">Invoice</span>
                             </button>
                           )}
                           <button
                             type="button"
-                            className="kanban-action-btn edit-btn"
+                            className="kanban-action-btn edit-btn action-tooltip-btn"
                             onClick={() => onEdit(r)}
-                            title="Edit Record"
                           >
                             <Icon name="edit" size={13} />
+                            <span className="action-hover-tag">Edit</span>
                           </button>
                           <button
                             type="button"
-                            className="kanban-action-btn delete-btn"
+                            className="kanban-action-btn delete-btn action-tooltip-btn"
                             onClick={() => onDelete(r.id)}
-                            title="Delete Record"
                           >
                             <Icon name="trash" size={13} />
+                            <span className="action-hover-tag">Delete</span>
                           </button>
                         </div>
                       </div>
@@ -203,9 +228,24 @@ const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhat
                   );
                 })}
 
-                {colRecords.length === 0 && (
+                {isOver && (
+                  <div className="drag-drop-placeholder" style={{
+                    padding: '12px',
+                    border: '2px dashed #2563eb',
+                    borderRadius: '8px',
+                    background: 'rgba(37, 99, 235, 0.1)',
+                    color: '#2563eb',
+                    fontWeight: 600,
+                    fontSize: '0.82rem',
+                    textAlign: 'center'
+                  }}>
+                    + Drop here to move to {colStatus}
+                  </div>
+                )}
+
+                {colRecords.length === 0 && !isOver && (
                   <div className="kanban-empty-column">
-                    <p>No items in {colStatus}</p>
+                    <p>Drag items here</p>
                   </div>
                 )}
               </div>

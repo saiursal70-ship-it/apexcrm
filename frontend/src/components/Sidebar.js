@@ -20,9 +20,11 @@ const Sidebar = ({ collapsed, mobileOpen, setMobileOpen }) => {
     {
       groupLabel: 'MANAGEMENT',
       items: [
+        { path: '/admin/workspace', label: 'Admin Board ⚡', icon: 'grid' },
         { path: '/tasks', label: 'Tasks', icon: 'check' },
         { path: '/appointments', label: 'Appointments', icon: 'calendar' },
         { path: '/invoices', label: 'Invoices', icon: 'invoice' },
+        { path: '/quotations', label: 'Quotations', icon: 'quotation' },
       ],
     },
     {
@@ -48,11 +50,11 @@ const Sidebar = ({ collapsed, mobileOpen, setMobileOpen }) => {
 
         <nav className="sidebar-nav">
           {navGroups.map((group, idx) => (
-            <div className="sidebar-group" key={idx}>
+            <div className="sidebar-group" key={`sidebar-group-${group.groupLabel}-${idx}`}>
               {!collapsed && <span className="sidebar-group-label">{group.groupLabel}</span>}
-              {group.items.map((item) => (
+              {group.items.map((item, itemIdx) => (
                 <NavLink
-                  key={item.path}
+                  key={`sidebar-item-${item.path}-${itemIdx}`}
                   to={item.path}
                   className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                   onClick={() => setMobileOpen(false)}

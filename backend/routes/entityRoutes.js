@@ -32,7 +32,7 @@ router.use('/products', createCrudRouter('products', [
 ]));
 
 router.use('/invoices', createCrudRouter('invoices', [
-    'invoice_number', 'client_account', 'invoice_date', 'due_date', 'amount', 'payment_status', 'payment_mode'
+    'invoice_number', 'client_account', 'invoice_date', 'due_date', 'amount', 'paid_amount', 'payment_status', 'payment_mode'
 ]));
 
 router.use('/campaigns', createCrudRouter('campaigns', [
@@ -41,6 +41,14 @@ router.use('/campaigns', createCrudRouter('campaigns', [
 
 router.use('/tickets', createCrudRouter('tickets', [
     'subject', 'client_name', 'priority', 'status', 'assigned_to', 'created_date', 'description'
+]));
+
+router.use('/quotations', createCrudRouter('quotations', [
+    'quotation_number', 'client_name', 'project_title', 'email', 'phone', 'total_amount', 'quotation_date', 'valid_until', 'status', 'terms'
+]));
+
+router.use('/sprint-tasks', createCrudRouter('sprint_tasks', [
+    'task_key', 'title', 'epic', 'task_type', 'points', 'subtask_count', 'priority', 'status', 'assignee_name', 'assignee_avatar', 'project_name'
 ]));
 
 module.exports = router;

@@ -35,13 +35,17 @@ const InvoicePrintModal = ({ invoice, onClose }) => {
   };
 
   const totalAmount = Number(invoice.amount) || 0;
-  // Compute subtotal and GST breakdown (assuming 18% GST included or added)
+  const paidAmount = invoice.paid_amount !== undefined && invoice.paid_amount !== null
+    ? Number(invoice.paid_amount)
+    : (String(invoice.payment_status).toLowerCase() === 'paid' ? totalAmount : 0);
+
+  const dueAmount = Math.max(0, totalAmount - paidAmount);
+
+  // Compute subtotal and GST breakdown (assuming 18% GST included)
   const subtotal = Math.round(totalAmount / 1.18);
   const totalGst = totalAmount - subtotal;
   const cgst = Math.round(totalGst / 2);
   const sgst = totalGst - cgst;
-
-  const statusClass = String(invoice.payment_status || 'Pending').toLowerCase();
 
   return (
     <div className="invoice-modal-overlay">
@@ -77,9 +81,6 @@ const InvoicePrintModal = ({ invoice, onClose }) => {
             </div>
             <div className="invoice-header-meta">
               <h1 className="doc-title">TAX INVOICE</h1>
-              <div className={`invoice-status-badge status-${statusClass}`}>
-                {invoice.payment_status || 'Pending'}
-              </div>
             </div>
           </div>
 
@@ -127,9 +128,9 @@ const InvoicePrintModal = ({ invoice, onClose }) => {
               <tr>
                 <td>1</td>
                 <td>
-                  <strong>Enterprise CRM & Pipeline Automation Suite</strong>
+                  <strong>Enterprise Software License &amp; Services</strong>
                   <br />
-                  <span className="item-subtext">Annual Software License & Cloud Support Service for {invoice.client_account}</span>
+                  <span className="item-subtext">Software License &amp; Cloud Support Service for {invoice.client_account}</span>
                 </td>
                 <td>998313</td>
                 <td>1</td>
@@ -143,11 +144,11 @@ const InvoicePrintModal = ({ invoice, onClose }) => {
           <div className="invoice-summary-section">
             <div className="bank-details-box">
               <h4>BANK PAYMENT DETAILS</h4>
-              <p>Account Name: <strong>CRM OVERVIEW TECHNOLOGIES PVT LTD</strong></p>
+              <p>Account Name: <strong>APEX DEV TECHNOLOGIES PVT LTD</strong></p>
               <p>Bank Name: <strong>HDFC Bank Ltd</strong></p>
               <p>Account Number: <strong>50200012345678</strong></p>
               <p>IFSC Code: <strong>HDFC0001234</strong> (Branch: MG Road, Bangalore)</p>
-              <p>UPI ID: <strong>crmoverview@hdfcbank</strong></p>
+              <p>UPI ID: <strong>apexdev@hdfcbank</strong></p>
             </div>
 
             <div className="totals-calculation-box">
@@ -167,12 +168,21 @@ const InvoicePrintModal = ({ invoice, onClose }) => {
                 <span>Grand Total (Incl. GST):</span>
                 <span>₹{totalAmount.toLocaleString('en-IN')}</span>
               </div>
+              {/* Payment Breakdown: Paid Amount vs Balance Due */}
+              <div className="calc-row" style={{ background: 'rgba(16,185,129,0.1)', padding: '6px 12px', marginTop: '6px', borderRadius: '6px' }}>
+                <span style={{ color: '#047857', fontWeight: 700 }}>Amount Paid by User:</span>
+                <strong style={{ color: '#047857' }}>₹{paidAmount.toLocaleString('en-IN')}</strong>
+              </div>
+              <div className="calc-row" style={{ background: dueAmount > 0 ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', padding: '6px 12px', marginTop: '4px', borderRadius: '6px' }}>
+                <span style={{ color: dueAmount > 0 ? '#b91c1c' : '#047857', fontWeight: 800 }}>Remaining Balance Due:</span>
+                <strong style={{ color: dueAmount > 0 ? '#b91c1c' : '#047857', fontSize: '1rem' }}>₹{dueAmount.toLocaleString('en-IN')}</strong>
+              </div>
             </div>
           </div>
 
           {/* Amount in Words */}
           <div className="amount-in-words-box">
-            <span>Amount Chargeable (in words):</span>
+            <span>Total Amount (in words):</span>
             <strong>{numberToWords(totalAmount)}</strong>
           </div>
 
@@ -189,10 +199,10 @@ const InvoicePrintModal = ({ invoice, onClose }) => {
 
             <div className="signatory-box">
               <div className="stamp-badge">
-                <span>CRM OVERVIEW</span>
+                <span>APEX DEV</span>
                 <small>OFFICIAL SEAL</small>
               </div>
-              <p className="for-company">For CRM Overview Technologies Pvt. Ltd.</p>
+              <p className="for-company">For APEX DEV Technologies Pvt. Ltd.</p>
               <div className="sig-space"></div>
               <p className="auth-signatory">Authorized Signatory</p>
             </div>

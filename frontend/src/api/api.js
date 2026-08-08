@@ -36,6 +36,9 @@ export const getMeRequest = () => API.get('/auth/me');
 // ---- Dashboard ----
 export const getDashboardStats = () => API.get('/dashboard/stats');
 
+// ---- Kanban Boards ----
+export const getKanbanBoard = (id) => API.get(`/v1/kanban/boards/${id}`);
+
 // ---- Generic entity CRUD ----
 export const getAll = (entity, search = '') => API.get(`/${entity}${search ? `?search=${search}` : ''}`);
 export const getOne = (entity, id) => API.get(`/${entity}/${id}`);

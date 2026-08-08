@@ -192,5 +192,55 @@ INSERT INTO invoices (invoice_number, client_account, invoice_date, due_date, am
 INSERT INTO campaigns (campaign_name, type, start_date, end_date, budget, status) VALUES
 ('Monsoon Offer 2026', 'Email', '2026-07-01', '2026-07-31', 50000, 'Active');
 
-INSERT INTO tickets (subject, client_name, priority, status, assigned_to, description) VALUES
-('Login issue on portal', 'ABC Corporation', 'High', 'Open', 'Admin User', 'Client unable to login to the CRM portal.');
+-- ---------------- QUOTATIONS / ESTIMATIONS ----------------
+CREATE TABLE IF NOT EXISTS quotations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    quotation_number VARCHAR(50) NOT NULL,
+    client_name VARCHAR(150) NOT NULL,
+    project_title VARCHAR(200),
+    email VARCHAR(150),
+    phone VARCHAR(20),
+    total_amount DECIMAL(12,2) DEFAULT 0,
+    quotation_date DATE,
+    valid_until DATE,
+    status VARCHAR(30) DEFAULT 'Draft',
+    terms TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO quotations (quotation_number, client_name, project_title, email, phone, total_amount, quotation_date, valid_until, status, terms) VALUES
+('QT-1001', 'Bharat Industries', 'Enterprise CRM & Automation Suite', 'bharat@bharatind.com', '9876500001', 650000, '2026-08-01', '2026-08-15', 'Sent', '50% Advance, 50% on project delivery.'),
+('QT-1002', 'Prakash Ltd.', 'Cloud Infrastructure Migration', 'prakash@prakashltd.com', '9876500002', 420000, '2026-08-02', '2026-08-17', 'Draft', 'GST (18%) extra as applicable.');
+
+-- ---------------- AGILE SPRINT TASKS (ADMIN WORKSPACE) ----------------
+CREATE TABLE IF NOT EXISTS sprint_tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    task_key VARCHAR(30) NOT NULL,
+    title TEXT NOT NULL,
+    epic VARCHAR(100) DEFAULT 'General',
+    task_type VARCHAR(30) DEFAULT 'story',
+    points INT DEFAULT 1,
+    subtask_count INT DEFAULT 0,
+    priority VARCHAR(20) DEFAULT 'Medium',
+    status VARCHAR(30) DEFAULT 'TO DO',
+    assignee_name VARCHAR(100) DEFAULT 'Admin User',
+    assignee_avatar VARCHAR(255) DEFAULT '',
+    project_name VARCHAR(100) DEFAULT 'Beyond Gravity',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO sprint_tasks (task_key, title, epic, task_type, points, subtask_count, priority, status, assignee_name, assignee_avatar, project_name) VALUES
+('NUC-205', 'Implement feedback collector', 'Feedback', 'story', 9, 0, 'Low', 'TO DO', 'Sarah Jenkins', 'https://i.pravatar.cc/150?u=sarah', 'Beyond Gravity'),
+('NUC-206', 'Bump version for new API for billing', 'Billing', 'bug', 3, 0, 'Medium', 'TO DO', 'Alex Dev', 'https://i.pravatar.cc/150?u=alex', 'Beyond Gravity'),
+('NUC-208', 'Add NPS feedback to wallboard', 'Feedback', 'task', 1, 0, 'Low', 'TO DO', 'Elena Rostova', 'https://i.pravatar.cc/150?u=elena', 'Beyond Gravity'),
+('NUC-213', 'Update T&C copy with v1.9 from the writers guild in all products that have cross country compliance', 'Legal & Compliance', 'bug', 0, 1, 'High', 'IN PROGRESS', 'Sarah Jenkins', 'https://i.pravatar.cc/150?u=sarah', 'Beyond Gravity'),
+('NUC-215', 'Tech spike on new stripe integration with paypal', 'Integrations', 'task', 3, 0, 'High', 'IN PROGRESS', 'Michael Vance', 'https://i.pravatar.cc/150?u=michael', 'Beyond Gravity'),
+('NUC-216', 'Refactor stripe verification key validator to a single call to avoid timing out on slow connections', 'Integrations', 'story', 3, 0, 'High', 'IN PROGRESS', 'Claire Redfield', 'https://i.pravatar.cc/150?u=claire', 'Beyond Gravity'),
+('NUC-217', 'Change phone number field type to ''phone''', 'Core UI', 'task', 0, 1, 'Low', 'IN PROGRESS', 'David Miller', 'https://i.pravatar.cc/150?u=david', 'Beyond Gravity'),
+('NUC-338', 'Multi-dest search UI web', 'Search Engine', 'story', 5, 0, 'High', 'IN REVIEW', 'Claire Redfield', 'https://i.pravatar.cc/150?u=claire', 'Beyond Gravity'),
+('NUC-336', 'Quick booking for accomodations - web', 'Booking Engine', 'story', 0, 4, 'Low', 'DONE', 'Michael Vance', 'https://i.pravatar.cc/150?u=michael', 'Beyond Gravity'),
+('NUC-346', 'Adapt web app no new payments provider', 'Payment Gateway', 'bug', 0, 3, 'Low', 'DONE', 'Sarah Jenkins', 'https://i.pravatar.cc/150?u=sarah', 'Beyond Gravity'),
+('NUC-343', 'Fluid booking on tablets', 'Mobile & Tablet', 'story', 5, 0, 'Medium', 'DONE', 'Michael Vance', 'https://i.pravatar.cc/150?u=michael', 'Beyond Gravity'),
+('NUC-354', 'Shoping cart purchasing error - quick fix required.', 'Checkout System', 'bug', 1, 0, 'High', 'DONE', 'Elena Rostova', 'https://i.pravatar.cc/150?u=elena', 'Beyond Gravity');
+
+

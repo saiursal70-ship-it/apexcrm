@@ -181,8 +181,8 @@ const Header = ({ pageTitle, onMenuClick, onAddClick, showAdd, searchValue, onSe
                     <p>No notifications yet</p>
                   </div>
                 ) : (
-                  notifications.map((n) => (
-                    <div className={`notif-item ${!n.read ? 'unread' : ''}`} key={n.id}>
+                  notifications.map((n, idx) => (
+                    <div className={`notif-item ${!n.read ? 'unread' : ''}`} key={`notif-${n.id}-${idx}`}>
                       <div className="notif-icon-box" style={{ background: n.bg, color: n.color }}>
                         <Icon name={n.type} size={16} />
                       </div>

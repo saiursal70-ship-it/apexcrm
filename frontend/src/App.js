@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import EntityPage from './pages/EntityPage';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import AdminWorkspace from './pages/AdminWorkspace';
 
 function App() {
   return (
@@ -23,6 +24,8 @@ function App() {
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/admin/workspace" element={<ProtectedRoute><AdminWorkspace /></ProtectedRoute>} />
+            <Route path="/sprint-board" element={<ProtectedRoute><AdminWorkspace /></ProtectedRoute>} />
 
             {/* Generic CRUD modules: leads, contacts, accounts, deals, tasks,
                 appointments, products, invoices, campaigns, tickets */}

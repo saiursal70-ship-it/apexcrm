@@ -27,10 +27,6 @@ const Reports = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const handlePrintReport = () => {
-    window.print();
-  };
-
   // Calculate client revenue ranking
   const clientRevenueMap = {};
   invoices.forEach((inv) => {
@@ -55,15 +51,12 @@ const Reports = () => {
 
   return (
     <Layout showAdd={false}>
-      {/* Top Toolbar Actions (Hidden on Print) */}
-      <div className="report-page-toolbar no-print">
+      {/* Top Toolbar Info Banner */}
+      <div className="report-page-toolbar">
         <div className="report-info-note">
           <Icon name="chart" size={18} />
           <span>Official Executive Performance &amp; Revenue Audit Report</span>
         </div>
-        <button type="button" className="btn btn-primary print-report-btn" onClick={handlePrintReport}>
-          <Icon name="printer" size={16} /> Print / Export PDF
-        </button>
       </div>
 
       {loading && <p className="loading-text">Generating Executive Report...</p>}

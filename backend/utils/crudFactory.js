@@ -12,10 +12,10 @@ function createCrudRouter(tableName, allowedFields) {
     const router = express.Router();
     router.use(authMiddleware);
 
-    // GET all (supports simple ?search= across all text fields)
+    // GET all (supports ?search= and pagination ?page=1&limit=50)
     router.get('/', async (req, res) => {
         try {
-            const { search } = req.query;
+            const { search, page, limit } = req.query;
             let sql = `SELECT * FROM \`${tableName}\``;
             let params = [];
 
@@ -25,6 +25,13 @@ function createCrudRouter(tableName, allowedFields) {
                 params = allowedFields.map(() => `%${search}%`);
             }
             sql += ' ORDER BY id DESC';
+
+            if (limit) {
+                const lim = parseInt(limit, 10) || 50;
+                const p = parseInt(page, 10) || 1;
+                const offset = (p - 1) * lim;
+                sql += ` LIMIT ${lim} OFFSET ${offset}`;
+            }
 
             const [rows] = await db.query(sql, params);
             res.json(rows);

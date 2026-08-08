@@ -1,4 +1,4 @@
-// Sidebar navigation items — updated to remove products, tickets, accounts, campaigns
+// Sidebar navigation items
 const navConfig = [
   { path: '/dashboard', label: 'Dashboard', icon: 'grid' },
   { path: '/leads', label: 'Leads', icon: 'users' },
@@ -7,6 +7,7 @@ const navConfig = [
   { path: '/tasks', label: 'Tasks', icon: 'check' },
   { path: '/appointments', label: 'Appointments', icon: 'calendar' },
   { path: '/invoices', label: 'Invoices', icon: 'invoice' },
+  { path: '/quotations', label: 'Quotations', icon: 'quotation' },
   { path: '/reports', label: 'Reports', icon: 'chart' },
   { path: '/settings', label: 'Settings', icon: 'settings' },
 ];

@@ -11,6 +11,7 @@ const paths = {
   calendar: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
   box: 'M21 8L12 3 3 8m18 0l-9 5m9-5v10l-9 5M3 8l9 5m-9-5v10l9 5m0-10v10',
   invoice: 'M6 2h9l5 5v15a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1zM14 2v6h6M9 13h6M9 17h6M9 9h2',
+  quotation: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 3.5L18.5 8H14V3.5zM16 13H8v-2h8v2zm0 4H8v-2h8v2zm-4-8H8V7h4v2z',
   chart: 'M3 3v18h18M9 17V9m5 8V5m5 12v-6',
   megaphone: 'M3 11v2a2 2 0 002 2h1l3 5V4l-3 5H5a2 2 0 00-2 2zm14-5a5 5 0 010 10',
   ticket: 'M3 10a2 2 0 100 4v3a1 1 0 001 1h16a1 1 0 001-1v-3a2 2 0 100-4V7a1 1 0 00-1-1H4a1 1 0 00-1 1v3z',

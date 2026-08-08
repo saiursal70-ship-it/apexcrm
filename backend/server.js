@@ -5,6 +5,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const entityRoutes = require('./routes/entityRoutes');
+const kanbanRoutes = require('./routes/kanbanRoutes');
 
 const app = express();
 
@@ -14,6 +15,8 @@ app.use(express.json());
 // Mount API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/v1/kanban', kanbanRoutes);
+app.use('/api/kanban', kanbanRoutes);
 app.use('/api', entityRoutes);
 
 // Health check endpoint

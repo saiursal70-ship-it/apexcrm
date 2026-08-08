@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import CommandPalette from './CommandPalette';
 import Icon from './Icon';
 import navConfig from '../config/navConfig';
 
 const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) => {
   const [collapsed, setCollapsed] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const location = useLocation();
   const searchInputRef = useRef(null);
 
@@ -22,12 +24,12 @@ const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) 
     }
   };
 
-  // Global Keyboard Shortcut (Ctrl+K or Cmd+K) to focus search bar
+  // Global Keyboard Shortcut (Ctrl+K or Cmd+K) to open Command Palette
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        searchInputRef.current?.focus();
+        setCommandPaletteOpen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -85,6 +87,10 @@ const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) 
           {children}
         </div>
       </div>
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+      />
     </div>
   );
 };

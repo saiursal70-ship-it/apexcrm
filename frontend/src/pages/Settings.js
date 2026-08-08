@@ -1,14 +1,29 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
+const DEFAULT_ROLES = [
+  { id: 'admin', role: 'System Administrator', department: 'Executive Management', designation: 'Chief Administrator', level: 'Level 5 (Full Access)', userCount: 3 },
+  { id: 'manager', role: 'Sales Manager', department: 'Sales & Business Development', designation: 'Senior Sales Lead', level: 'Level 4 (Managerial)', userCount: 8 },
+  { id: 'rep', role: 'Sales Representative', department: 'Field Sales Operations', designation: 'Account Executive', level: 'Level 2 (Standard)', userCount: 24 },
+  { id: 'support', role: 'Support Specialist', department: 'Customer Success', designation: 'Technical Support Lead', level: 'Level 3 (Support)', userCount: 12 },
+  { id: 'finance', role: 'Finance & Billing Lead', department: 'Finance & Operations', designation: 'Billing Administrator', level: 'Level 4 (Financial)', userCount: 5 }
+];
+
 const Settings = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
   const [toastMsg, setToastMsg] = useState(null);
+
+  const showToast = (msg) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
 
   // Form states initialized with user/default data
   const [profileForm, setProfileForm] = useState({
@@ -17,6 +32,40 @@ const Settings = () => {
     phone: '+91 98765 43210',
     designation: 'System Administrator'
   });
+
+  const [roles, setRoles] = useState(DEFAULT_ROLES);
+  const [selectedRole, setSelectedRole] = useState(DEFAULT_ROLES[0].id);
+  const [rbacForm, setRbacForm] = useState({
+    role: DEFAULT_ROLES[0].role,
+    department: DEFAULT_ROLES[0].department,
+    designation: DEFAULT_ROLES[0].designation,
+    level: DEFAULT_ROLES[0].level
+  });
+
+  const handleRoleSelect = (roleId) => {
+    setSelectedRole(roleId);
+    const found = roles.find((r) => r.id === roleId);
+    if (found) {
+      setRbacForm({
+        role: found.role,
+        department: found.department,
+        designation: found.designation,
+        level: found.level
+      });
+      setProfileForm((prev) => ({
+        ...prev,
+        designation: found.designation
+      }));
+    }
+  };
+
+  const handleRbacSave = (e) => {
+    e.preventDefault();
+    setRoles((prev) =>
+      prev.map((r) => (r.id === selectedRole ? { ...r, ...rbacForm } : r))
+    );
+    showToast(`✅ Designation "${rbacForm.designation}" & Department updated successfully!`);
+  };
 
   const [companyForm, setCompanyForm] = useState({
     company_name: 'CRM Overview Technologies Pvt. Ltd.',
@@ -53,23 +102,20 @@ const Settings = () => {
     webhookUrl: 'https://api.crmoverview.com/v1/webhooks/leads'
   });
 
-  const showToast = (msg) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3000);
-  };
-
   const handleSave = (e, sectionName) => {
     e.preventDefault();
     showToast(`✅ ${sectionName} saved successfully!`);
   };
 
   const navItems = [
+    { id: 'admin-workspace', label: 'Admin Workspace ⚡', icon: 'grid', desc: 'Agile Sprint Board & Admin Control' },
+    { id: 'users-rbac', label: 'Users & RBAC 🛡️', icon: 'shield', desc: 'Role designation & department settings' },
     { id: 'profile', label: 'My Profile', icon: 'user', desc: 'Edit personal details and role' },
     { id: 'company', label: 'Company Profile', icon: 'building', desc: 'Manage company & GST details' },
     { id: 'branding', label: 'Branding', icon: 'palette', desc: 'Custom logo and theme accent' },
     { id: 'theme', label: 'Theme Preferences', icon: 'sun', desc: 'Light / Dark mode settings' },
     { id: 'notifications', label: 'Notification Settings', icon: 'bell', desc: 'Email & WhatsApp alert preferences' },
-    { id: 'security', label: 'Security & Password', icon: 'shield', desc: 'Update credentials & 2FA' },
+    { id: 'security', label: 'Security & Password', icon: 'lock', desc: 'Update credentials & 2FA' },
     { id: 'api', label: 'API Configurations', icon: 'key', desc: 'WhatsApp API & Webhook endpoints' },
     { id: 'backup', label: 'Backups & Recovery', icon: 'database', desc: 'Export database & backup schedule' }
   ];
@@ -503,6 +549,147 @@ const Settings = () => {
                     onClick={() => showToast('📥 Generating Database CSV Export Snapshot...')}
                   >
                     <Icon name="database" size={16} /> Export Full Database CSV
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: USERS & RBAC */}
+          {activeTab === 'users-rbac' && (
+            <div className="settings-section">
+              <div className="section-header">
+                <h2>Users &amp; Role-Based Access Control (RBAC)</h2>
+                <p>Select a user role to automatically load, view, and sync matching Designation and Department details.</p>
+              </div>
+
+              <div className="rbac-role-selector-box" style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: '8px', fontSize: '0.9rem' }}>
+                  Select Target System Role to Inspect/Edit:
+                </label>
+                <select
+                  value={selectedRole}
+                  onChange={(e) => handleRoleSelect(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', fontWeight: 600 }}
+                >
+                  {roles.map((r, rIdx) => (
+                    <option key={`role-opt-${r.id}-${rIdx}`} value={r.id}>
+                      {r.role} ({r.designation} — {r.department})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Role Cards Grid */}
+              <div className="role-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+                {roles.map((r, rIdx) => (
+                  <div
+                    key={`role-card-${r.id}-${rIdx}`}
+                    onClick={() => handleRoleSelect(r.id)}
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      border: selectedRole === r.id ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                      background: selectedRole === r.id ? 'rgba(37, 99, 235, 0.05)' : '#ffffff',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', color: selectedRole === r.id ? '#2563eb' : '#0f172a' }}>{r.role}</h4>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#64748b' }}>{r.designation}</p>
+                    <span style={{ fontSize: '0.72rem', color: '#3b82f6', fontWeight: 600 }}>{r.userCount} active users</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dynamic Designation & Department Form */}
+              <form onSubmit={handleRbacSave} className="settings-form">
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label>Role Name</label>
+                    <input
+                      type="text"
+                      value={rbacForm.role}
+                      onChange={(e) => setRbacForm({ ...rbacForm, role: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Permission Security Level</label>
+                    <input
+                      type="text"
+                      value={rbacForm.level}
+                      onChange={(e) => setRbacForm({ ...rbacForm, level: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Designation * (Auto-Derived per Role)</label>
+                    <input
+                      type="text"
+                      value={rbacForm.designation}
+                      onChange={(e) => setRbacForm({ ...rbacForm, designation: e.target.value })}
+                      placeholder="e.g. Senior Sales Lead"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Department * (Auto-Derived per Role)</label>
+                    <input
+                      type="text"
+                      value={rbacForm.department}
+                      onChange={(e) => setRbacForm({ ...rbacForm, department: e.target.value })}
+                      placeholder="e.g. Sales & Business Development"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="settings-form-actions" style={{ marginTop: '20px' }}>
+                  <button type="submit" className="btn btn-primary">
+                    🛡️ Save Role &amp; Sync Designation
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* TAB 9: ADMIN WORKSPACE */}
+          {activeTab === 'admin-workspace' && (
+            <div className="settings-section">
+              <div className="section-header">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <h2>Admin Workspace &amp; Sprint Board</h2>
+                    <p>Agile project workspace for administrative users only. Manage active sprints, drag-and-drop task cards, Epics, and team assignments.</p>
+                  </div>
+                  <span className="admin-status-badge">⚡ ADMIN ACCESS GRANTED</span>
+                </div>
+              </div>
+
+              <div className="admin-workspace-access-card">
+                <div className="card-banner-icon">⚡</div>
+                <div className="card-info">
+                  <h3>Beyond Gravity - Agile Sprint Board</h3>
+                  <p>Access the full Jira-style Sprint Board featuring TO DO, IN PROGRESS, IN REVIEW, and DONE columns with real-time issue updates.</p>
+                  
+                  <div className="sprint-stats-pills">
+                    <span className="pill todo">12 TO DO</span>
+                    <span className="pill progress">4 IN PROGRESS</span>
+                    <span className="pill review">4 IN REVIEW</span>
+                    <span className="pill done">4 DONE</span>
+                  </div>
+                </div>
+
+                <div className="card-action">
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-launch-admin"
+                    onClick={() => navigate('/admin/workspace')}
+                  >
+                    ⚡ Open Admin Sprint Board Workspace
                   </button>
                 </div>
               </div>
