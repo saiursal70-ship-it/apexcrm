@@ -4,10 +4,11 @@ import Icon from './Icon';
 import ApexDevLogo from './ApexDevLogo';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { animateDropdownEnter, animateButtonPulse, animate } from '../utils/animations';
 
 const defaultAvatar = process.env.PUBLIC_URL + '/avatar.png';
 
-const initialNotifications = [
+const defaultNotifications = [
   {
     id: 1,
     title: 'New Lead Captured',
@@ -17,6 +18,7 @@ const initialNotifications = [
     read: false,
     color: '#4f46e5',
     bg: '#e0e7ff',
+    route: '/leads'
   },
   {
     id: 2,
@@ -27,6 +29,7 @@ const initialNotifications = [
     read: false,
     color: '#059669',
     bg: '#d1fae5',
+    route: '/deals'
   },
   {
     id: 3,
@@ -37,6 +40,7 @@ const initialNotifications = [
     read: false,
     color: '#d97706',
     bg: '#fef3c7',
+    route: '/tasks'
   },
   {
     id: 4,
@@ -47,6 +51,7 @@ const initialNotifications = [
     read: true,
     color: '#db2777',
     bg: '#fce7f3',
+    route: '/invoices'
   },
   {
     id: 5,
@@ -57,6 +62,7 @@ const initialNotifications = [
     read: true,
     color: '#15803d',
     bg: '#dcfce7',
+    route: '/leads'
   },
 ];
 
@@ -71,12 +77,63 @@ const Header = ({ pageTitle, onMenuClick, onAddClick, showAdd, searchValue, onSe
 
   // Notification dropdown state
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem('crm_notifications_list');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return defaultNotifications;
+  });
   const notifRef = useRef(null);
 
   const navigate = useNavigate();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // Persist notifications list to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('crm_notifications_list', JSON.stringify(notifications));
+    } catch (e) {}
+  }, [notifications]);
+
+  // Global Real-time Notification Listener
+  useEffect(() => {
+    const handleNewNotif = (e) => {
+      if (e.detail) {
+        const item = {
+          id: Date.now(),
+          title: e.detail.title || 'New CRM Alert',
+          text: e.detail.text || '',
+          type: e.detail.type || 'bell',
+          time: 'Just now',
+          read: false,
+          color: e.detail.color || '#2563eb',
+          bg: e.detail.bg || 'rgba(37,99,235,0.15)',
+          route: e.detail.route || '/dashboard'
+        };
+        setNotifications((prev) => [item, ...prev]);
+      }
+    };
+    window.addEventListener('crm-notification', handleNewNotif);
+    return () => window.removeEventListener('crm-notification', handleNewNotif);
+  }, []);
+
+  // Animate dropdowns on open
+  useEffect(() => {
+    if (notifOpen) {
+      animateDropdownEnter('.notif-dropdown');
+    }
+  }, [notifOpen]);
+
+  useEffect(() => {
+    if (dropdownOpen) {
+      animateDropdownEnter('.profile-dropdown');
+    }
+  }, [dropdownOpen]);
 
   // Global Keyboard Shortcut (Ctrl+K or Cmd+K) to focus search bar
   useEffect(() => {
@@ -108,12 +165,36 @@ const Header = ({ pageTitle, onMenuClick, onAddClick, showAdd, searchValue, onSe
     navigate('/login');
   };
 
-  const markAllRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, read: true })));
+  const handleThemeToggle = (e) => {
+    if (e?.currentTarget) {
+      animate(e.currentTarget, {
+        rotate: [0, 360],
+        scale: [1, 0.85, 1.15, 1],
+        duration: 500,
+        ease: 'outBack'
+      });
+    }
+    toggleTheme();
   };
 
-  const removeNotification = (id) => {
-    setNotifications(notifications.filter((n) => n.id !== id));
+  const handleNotificationClick = (item) => {
+    // Mark item as read
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
+    );
+    setNotifOpen(false);
+    if (item.route) {
+      navigate(item.route);
+    }
+  };
+
+  const markAllRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const removeNotification = (e, id) => {
+    e.stopPropagation();
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   const clearAllNotifications = () => {
@@ -131,7 +212,7 @@ const Header = ({ pageTitle, onMenuClick, onAddClick, showAdd, searchValue, onSe
           <Icon name="menu" size={20} />
         </button>
         <div className="header-brand-wrap" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ApexDevLogo size={36} showText={true} />
+          <ApexDevLogo size={34} showText={true} textColor={isDark ? '#f8fafc' : '#0f172a'} />
         </div>
       </div>
 
@@ -139,7 +220,7 @@ const Header = ({ pageTitle, onMenuClick, onAddClick, showAdd, searchValue, onSe
         {/* THEME TOGGLE BUTTON */}
         <button 
           className="icon-btn theme-toggle-topbar-btn" 
-          onClick={toggleTheme} 
+          onClick={handleThemeToggle} 
           title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
           aria-label="Toggle Theme"
         >
@@ -150,7 +231,8 @@ const Header = ({ pageTitle, onMenuClick, onAddClick, showAdd, searchValue, onSe
         <div className="notification-menu" ref={notifRef}>
           <button
             className="icon-btn notif-btn-wrapper"
-            onClick={() => {
+            onClick={(e) => {
+              animateButtonPulse(e.currentTarget);
               setNotifOpen(!notifOpen);
               setDropdownOpen(false);
             }}
@@ -161,7 +243,7 @@ const Header = ({ pageTitle, onMenuClick, onAddClick, showAdd, searchValue, onSe
           </button>
 
           {notifOpen && (
-            <div className="notif-dropdown">
+            <div className="notif-dropdown" style={{ minWidth: '340px' }}>
               <div className="notif-header">
                 <div>
                   <h3 className="notif-title">Notifications</h3>
@@ -176,32 +258,38 @@ const Header = ({ pageTitle, onMenuClick, onAddClick, showAdd, searchValue, onSe
 
               <div className="notif-list">
                 {notifications.length === 0 ? (
-                  <div className="notif-empty">
-                    <Icon name="bell" size={28} />
-                    <p>No notifications yet</p>
+                  <div className="notif-empty" style={{ padding: '36px 20px', textAlign: 'center' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(16,185,129,0.12)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+                      <Icon name="check" size={22} />
+                    </div>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text, #0f172a)' }}>All Caught Up! 🎉</p>
+                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>No pending notifications</span>
                   </div>
                 ) : (
                   notifications.map((n, idx) => (
-                    <div className={`notif-item ${!n.read ? 'unread' : ''}`} key={`notif-${n.id}-${idx}`}>
+                    <div
+                      className={`notif-item ${!n.read ? 'unread' : ''}`}
+                      key={`notif-${n.id}-${idx}`}
+                      onClick={() => handleNotificationClick(n)}
+                      style={{ cursor: 'pointer', transition: 'background 0.15s ease' }}
+                      title={`Click to open ${n.title}`}
+                    >
                       <div className="notif-icon-box" style={{ background: n.bg, color: n.color }}>
                         <Icon name={n.type} size={16} />
                       </div>
                       <div className="notif-body">
                         <div className="notif-item-header">
-                          <span className="notif-item-title">{n.title}</span>
+                          <span className="notif-item-title" style={{ fontWeight: n.read ? 600 : 800 }}>{n.title}</span>
                           <span className="notif-item-time">{n.time}</span>
                         </div>
                         <p className="notif-item-text">{n.text}</p>
                       </div>
                       <button
                         className="notif-dismiss-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeNotification(n.id);
-                        }}
+                        onClick={(e) => removeNotification(e, n.id)}
                         title="Dismiss"
                       >
-                        <Icon name="close" size={14} />
+                        <Icon name="x" size={14} />
                       </button>
                     </div>
                   ))

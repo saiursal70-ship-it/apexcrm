@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Icon from './Icon';
 import ApexDevLogo from './ApexDevLogo';
+import { animateModalEnter } from '../utils/animations';
 
 // Helper to convert number to words (Indian Rupees)
 const numberToWords = (num) => {
@@ -28,6 +29,25 @@ const numberToWords = (num) => {
 };
 
 const InvoicePrintModal = ({ invoice, onClose }) => {
+  const modalRef = useRef(null);
+  const overlayRef = useRef(null);
+
+  useEffect(() => {
+    if (invoice) {
+      animateModalEnter(modalRef.current, overlayRef.current);
+    }
+  }, [invoice]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && invoice) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [invoice, onClose]);
+
   if (!invoice) return null;
 
   const handlePrint = () => {
@@ -48,8 +68,8 @@ const InvoicePrintModal = ({ invoice, onClose }) => {
   const sgst = totalGst - cgst;
 
   return (
-    <div className="invoice-modal-overlay">
-      <div className="invoice-modal-container">
+    <div className="invoice-modal-overlay" ref={overlayRef}>
+      <div className="invoice-modal-container" ref={modalRef}>
         {/* Top Control Action Bar (Hidden when printing) */}
         <div className="invoice-action-bar no-print">
           <div className="action-bar-title">

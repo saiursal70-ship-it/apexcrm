@@ -1,6 +1,6 @@
 import React from 'react';
 
-// Lightweight inline SVG icon set — avoids extra icon-library dependency
+// Lightweight, crisp inline SVG icon set — 100% complete across all CRM modules
 const paths = {
   grid: 'M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z',
   users: 'M17 20v-2a4 4 0 00-3-3.87M7 20v-2a4 4 0 013-3.87m5-6.13a4 4 0 11-8 0 4 4 0 018 0zm6 12v-2a4 4 0 00-3-3.87',
@@ -27,6 +27,7 @@ const paths = {
   edit: 'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z',
   trash: 'M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z',
   close: 'M18 6L6 18M6 6l12 12',
+  x: 'M18 6L6 18M6 6l12 12',
   eyeOff: 'M17.94 17.94A10.94 10.94 0 0112 20c-7 0-11-8-11-8a21.6 21.6 0 015.06-6.94M9.9 4.24A10.94 10.94 0 0112 4c7 0 11 8 11 8a21.6 21.6 0 01-2.16 3.19M1 1l22 22M14.12 14.12a3 3 0 11-4.24-4.24',
   eye: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 15a3 3 0 100-6 3 3 0 000 6z',
   whatsapp: 'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.461C6.796 21.843 2.1 17.148 2.1 11.397 2.1 5.647 6.796.952 12.547.952c5.75 0 10.446 4.695 10.446 10.445 0 5.751-4.696 10.446-10.446 10.446',
@@ -40,17 +41,54 @@ const paths = {
   palette: 'M12 2a10 10 0 00-7.07 17.07 1 1 0 001.41-1.41A8 8 0 1112 4z',
   database: 'M21 5c0 1.66-4.03 3-9 3S3 6.66 3 5s4.03-3 9-3 9 1.34 9 3z M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5 M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3',
   key: 'M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4',
+  clock: 'M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2a8 8 0 100-16 8 8 0 000 16zm1-8h4v2h-6V7h2v5z',
+  refresh: 'M23 4v6h-6M1 20v-6h6 M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15',
+  download: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3',
+  info: 'M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2a8 8 0 100-16 8 8 0 000 16zm-1-5h2v2h-2v-2zm0-8h2v6h-2V7z',
+  document: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 3.5L18.5 8H14V3.5zM16 13H8v-2h8v2zm0 4H8v-2h8v2z',
+  message: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
+  phone: 'M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z',
+  filter: 'M22 3H2l8 9.46V19l4 2v-8.54L22 3z',
+  bolt: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
+  arrowRight: 'M5 12h14M12 5l7 7-7 7',
+  arrowUp: 'M12 19V5M5 12l7-7 7 7',
+  arrowDown: 'M12 5v14M19 12l-7 7-7-7',
+  activity: 'M22 12h-4l-3 9L9 3l-3 9H2'
 };
 
-const Icon = ({ name, size = 20, strokeWidth = 2, className = '' }) => {
-  const d = paths[name];
-  if (!d) return null;
+// Aliases mapping for bulletproof resolution
+const aliases = {
+  dashboard: 'grid',
+  deals: 'target',
+  leads: 'users',
+  contacts: 'contact',
+  accounts: 'building',
+  support: 'ticket',
+  tasks: 'check',
+  appointments: 'calendar',
+  invoices: 'invoice',
+  quotations: 'quotation',
+  reports: 'chart',
+  settings: 'settings',
+  doc: 'document',
+  sms: 'message'
+};
+
+const Icon = ({ name, size = 20, strokeWidth = 2, className = '', style = {} }) => {
+  const resolvedKey = aliases[name] || name;
+  const d = paths[resolvedKey] || paths.target;
   return (
     <svg
-      width={size} height={size} viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth={strokeWidth}
-      strokeLinecap="round" strokeLinejoin="round"
-      className={`icon icon-${name} ${className}`}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`icon icon-${name || 'default'} ${className}`}
+      style={style}
     >
       <path d={d} />
     </svg>

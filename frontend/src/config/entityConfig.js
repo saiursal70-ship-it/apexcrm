@@ -1,11 +1,12 @@
-// Central configuration for CRM modules.
-// Each entry drives: the sidebar label, API endpoint, table columns, form fields,
+// Central configuration for CRM modules with concise, premium SaaS descriptions.
+// Each entry drives: sidebar label, descriptions, API endpoint, table columns, form fields,
 // and Kanban Board column grouping properties.
 
 const entityConfig = {
   leads: {
     label: 'Leads',
     title: 'Leads',
+    description: 'Capture, qualify, and convert your most promising opportunities.',
     idField: 'id',
     statusField: 'lead_status',
     titleField: 'lead_name',
@@ -25,6 +26,7 @@ const entityConfig = {
   contacts: {
     label: 'Contacts',
     title: 'Contacts',
+    description: 'Keep every customer relationship organized and accessible.',
     idField: 'id',
     statusField: 'relationship',
     titleField: 'contact_name',
@@ -41,9 +43,30 @@ const entityConfig = {
       { name: 'notes', label: 'Notes', type: 'textarea' },
     ]
   },
+  accounts: {
+    label: 'Accounts',
+    title: 'Companies & Accounts',
+    description: 'Manage client companies, organization profiles, and account owners.',
+    idField: 'id',
+    statusField: 'company_size',
+    titleField: 'company_name',
+    subtitleField: 'industry',
+    columns: ['company_name', 'industry', 'website', 'address', 'gst_tax_id', 'company_size', 'account_owner'],
+    fields: [
+      { name: 'company_name', label: 'Company Name', type: 'text', required: true },
+      { name: 'industry', label: 'Industry', type: 'text' },
+      { name: 'website', label: 'Website', type: 'text' },
+      { name: 'address', label: 'Address', type: 'text' },
+      { name: 'gst_tax_id', label: 'GST / Tax ID', type: 'text' },
+      { name: 'company_size', label: 'Company Size', type: 'select', options: ['1-10', '10-50', '50-200', '200-500', '500+'] },
+      { name: 'account_owner', label: 'Account Owner', type: 'text' },
+      { name: 'notes', label: 'Notes', type: 'textarea' },
+    ]
+  },
   deals: {
     label: 'Deals',
-    title: 'Deals',
+    title: 'Deals & Opportunities',
+    description: 'Track opportunities from first contact to successful close.',
     idField: 'id',
     statusField: 'stage',
     titleField: 'deal_name',
@@ -63,7 +86,8 @@ const entityConfig = {
   },
   tasks: {
     label: 'Tasks',
-    title: 'Tasks / Activities',
+    title: 'Tasks & Activities',
+    description: 'Plan your work, manage priorities, and get things done.',
     idField: 'id',
     statusField: 'status',
     titleField: 'task_name',
@@ -81,7 +105,8 @@ const entityConfig = {
   },
   appointments: {
     label: 'Appointments',
-    title: 'Appointments',
+    title: 'Appointments & Meetings',
+    description: 'Schedule meetings and stay connected with your customers.',
     idField: 'id',
     statusField: 'status',
     titleField: 'title',
@@ -97,9 +122,30 @@ const entityConfig = {
       { name: 'notes', label: 'Notes', type: 'textarea' },
     ]
   },
+  products: {
+    label: 'Products',
+    title: 'Products & Services',
+    description: 'Catalog your products, services, pricing, and tax rates.',
+    idField: 'id',
+    statusField: 'status',
+    titleField: 'product_name',
+    subtitleField: 'category',
+    valueField: 'price',
+    columns: ['product_name', 'category', 'price', 'unit', 'tax', 'status'],
+    fields: [
+      { name: 'product_name', label: 'Product Name', type: 'text', required: true },
+      { name: 'category', label: 'Category', type: 'text' },
+      { name: 'price', label: 'Price (₹)', type: 'number', required: true },
+      { name: 'unit', label: 'Unit', type: 'text' },
+      { name: 'tax', label: 'Tax (%)', type: 'number' },
+      { name: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive', 'Out of Stock'] },
+      { name: 'description', label: 'Description', type: 'textarea' },
+    ]
+  },
   invoices: {
     label: 'Invoices',
     title: 'Invoices & Payments',
+    description: 'Manage billing, payments, and outstanding invoices effortlessly.',
     idField: 'id',
     statusField: 'payment_status',
     titleField: 'invoice_number',
@@ -119,7 +165,8 @@ const entityConfig = {
   },
   quotations: {
     label: 'Quotations',
-    title: 'Company Commercial Quotations',
+    title: 'Commercial Quotations',
+    description: 'Create, manage, and track professional customer quotations.',
     idField: 'id',
     statusField: 'status',
     titleField: 'quotation_number',
@@ -139,6 +186,45 @@ const entityConfig = {
       { name: 'terms', label: 'Terms & Conditions', type: 'textarea' },
     ]
   },
+  campaigns: {
+    label: 'Campaigns',
+    title: 'Marketing Campaigns',
+    description: 'Run multi-channel marketing campaigns and track budget ROI.',
+    idField: 'id',
+    statusField: 'status',
+    titleField: 'campaign_name',
+    subtitleField: 'type',
+    valueField: 'budget',
+    columns: ['campaign_name', 'type', 'start_date', 'end_date', 'budget', 'status'],
+    fields: [
+      { name: 'campaign_name', label: 'Campaign Name', type: 'text', required: true },
+      { name: 'type', label: 'Type', type: 'select', options: ['Email', 'Social Media', 'Google Ads', 'Event', 'Other'] },
+      { name: 'start_date', label: 'Start Date', type: 'date' },
+      { name: 'end_date', label: 'End Date', type: 'date' },
+      { name: 'budget', label: 'Budget (₹)', type: 'number' },
+      { name: 'status', label: 'Status', type: 'select', options: ['Planned', 'In Progress', 'Completed', 'Cancelled'] },
+      { name: 'notes', label: 'Notes', type: 'textarea' },
+    ]
+  },
+  tickets: {
+    label: 'Tickets',
+    title: 'Support Tickets',
+    description: 'Resolve customer support inquiries and track service tickets.',
+    idField: 'id',
+    statusField: 'status',
+    titleField: 'subject',
+    subtitleField: 'client_name',
+    columns: ['subject', 'client_name', 'priority', 'status', 'assigned_to', 'created_date'],
+    fields: [
+      { name: 'subject', label: 'Subject', type: 'text', required: true },
+      { name: 'client_name', label: 'Client Name', type: 'text' },
+      { name: 'priority', label: 'Priority', type: 'select', options: ['Low', 'Medium', 'High', 'Urgent'] },
+      { name: 'status', label: 'Status', type: 'select', options: ['Open', 'In Progress', 'Resolved', 'Closed'] },
+      { name: 'assigned_to', label: 'Assigned To', type: 'text' },
+      { name: 'created_date', label: 'Created Date', type: 'date' },
+      { name: 'description', label: 'Description', type: 'textarea' },
+    ]
+  }
 };
 
 export default entityConfig;

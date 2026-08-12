@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from './Icon';
 import navConfig from '../config/navConfig';
+import { animateModalEnter, animateStagger } from '../utils/animations';
 
 /**
  * CommandPalette Component
@@ -10,6 +11,15 @@ import navConfig from '../config/navConfig';
 const CommandPalette = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const paletteRef = useRef(null);
+  const overlayRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      animateModalEnter(paletteRef.current, overlayRef.current);
+      animateStagger('.command-item', { translateY: [10, 0], opacity: [0, 1], duration: 300 });
+    }
+  }, [isOpen, query]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -46,8 +56,8 @@ const CommandPalette = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="command-palette-overlay" onClick={onClose}>
-      <div className="command-palette-container glass-card" onClick={(e) => e.stopPropagation()}>
+    <div className="command-palette-overlay" ref={overlayRef} onClick={onClose}>
+      <div className="command-palette-container glass-card" ref={paletteRef} onClick={(e) => e.stopPropagation()}>
         <div className="command-search-header">
           <Icon name="search" size={20} className="command-search-icon" />
           <input
@@ -90,9 +100,16 @@ const CommandPalette = ({ isOpen, onClose }) => {
                   className="command-item"
                   onClick={() => handleSelect(item.path)}
                 >
-                  <div className="command-item-left">
-                    <Icon name={item.icon || 'document'} size={16} />
-                    <span>{item.label}</span>
+                  <div className="command-item-left" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Icon name={item.icon || 'document'} size={16} />
+                      <span style={{ fontWeight: 600 }}>{item.label}</span>
+                    </div>
+                    {item.description && (
+                      <span style={{ fontSize: '0.78rem', color: '#94a3b8', marginLeft: 24 }}>
+                        {item.description}
+                      </span>
+                    )}
                   </div>
                   <span className="command-item-badge">Module</span>
                 </div>

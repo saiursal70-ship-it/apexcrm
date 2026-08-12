@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from './Icon';
 import ApexDevLogo from './ApexDevLogo';
-import { createRecord, updateRecord } from '../api/api';
+import { approveQuotationWorkflow } from '../api/api';
+import { animateModalEnter } from '../utils/animations';
 
 // Helper to convert number to words (Indian Rupees)
 const numberToWords = (num) => {
@@ -30,6 +31,24 @@ const numberToWords = (num) => {
 
 const QuotationPrintModal = ({ quotation, onClose }) => {
   const [converting, setConverting] = useState(false);
+  const modalRef = useRef(null);
+  const overlayRef = useRef(null);
+
+  useEffect(() => {
+    if (quotation) {
+      animateModalEnter(modalRef.current, overlayRef.current);
+    }
+  }, [quotation]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && quotation) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [quotation, onClose]);
 
   if (!quotation) return null;
 
@@ -40,25 +59,8 @@ const QuotationPrintModal = ({ quotation, onClose }) => {
   const handleConvertToInvoice = async () => {
     setConverting(true);
     try {
-      const invNum = `INV-${Math.floor(1000 + Math.random() * 9000)}`;
-      const amount = Number(quotation.total_amount || quotation.amount || 0);
-      const invoiceData = {
-        invoice_number: invNum,
-        client_account: quotation.client_name || quotation.company_name || 'Client Account',
-        amount: amount,
-        paid_amount: 0,
-        due_amount: amount,
-        payment_status: 'Pending',
-        payment_mode: 'Bank Transfer',
-        due_date: quotation.valid_until || new Date(Date.now() + 14 * 86400000).toISOString().substring(0, 10)
-      };
-
-      await createRecord('invoices', invoiceData);
-      try {
-        await updateRecord('quotations', quotation.id, { status: 'Accepted & Invoiced' });
-      } catch (e) {}
-
-      alert(`✅ Success! Quotation #${quotation.quotation_number || quotation.id} converted into Tax Invoice #${invNum}!`);
+      const res = await approveQuotationWorkflow({ quotation_id: quotation.id });
+      alert(`✅ Success! ${res.data?.message || 'Quotation approved and Tax Invoice generated!'}`);
       onClose();
     } catch (err) {
       alert('Error converting quotation to invoice: ' + (err.response?.data?.error || err.message));
@@ -76,8 +78,8 @@ const QuotationPrintModal = ({ quotation, onClose }) => {
   const statusClass = String(quotation.status || 'draft').toLowerCase().replace(/\s+/g, '-');
 
   return (
-    <div className="invoice-modal-overlay">
-      <div className="invoice-modal-container">
+    <div className="invoice-modal-overlay" ref={overlayRef}>
+      <div className="invoice-modal-container" ref={modalRef}>
         {/* Top Control Action Bar (Hidden when printing) */}
         <div className="invoice-action-bar no-print">
           <div className="action-bar-title">

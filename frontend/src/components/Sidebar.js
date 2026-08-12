@@ -44,7 +44,7 @@ const Sidebar = ({ collapsed, mobileOpen, setMobileOpen }) => {
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-top">
           <div className="sidebar-logo">
-            <ApexDevLogo size={collapsed ? 34 : 38} showText={!collapsed} />
+            <ApexDevLogo size={collapsed ? 32 : 36} showText={!collapsed} textColor="#ffffff" />
           </div>
         </div>
 

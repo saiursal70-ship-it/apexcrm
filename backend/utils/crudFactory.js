@@ -3,32 +3,79 @@ const db = require('../config/db');
 const authMiddleware = require('../middleware/auth');
 
 /**
- * Generic CRUD router factory.
- * Creates GET(all), GET(:id), POST, PUT(:id), DELETE(:id) routes
- * for any table, restricted to a whitelist of allowed columns
- * (prevents SQL injection via unexpected field names).
+ * Enterprise CRUD Router Factory
+ * Includes:
+ * 1. Soft Deletes (Trash & Instant Restore)
+ * 2. Automatic Audit Trail Logging
+ * 3. Faceted Multi-Filter Query Support
+ * 4. SQL Injection Protection & Whitelist Verification
+ * 5. Pagination & Indexed Querying
  */
 function createCrudRouter(tableName, allowedFields) {
     const router = express.Router();
     router.use(authMiddleware);
 
-    // GET all (supports ?search= and pagination ?page=1&limit=50)
+    // Audit Logging Helper
+    const logAudit = async (req, action, recordId, details = {}) => {
+        try {
+            const userId = req.user?.id || null;
+            const userEmail = req.user?.email || 'system';
+            const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+            await db.query(
+                `INSERT INTO audit_logs (user_id, user_email, action, entity, record_id, details, ip_address)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [userId, userEmail, action, tableName, recordId, JSON.stringify(details), ip]
+            );
+        } catch (err) {
+            console.warn(`[AuditLog Warning] ${tableName} log failed:`, err.message);
+        }
+    };
+
+    // GET all records (supports ?search=, ?trash=true, faceted field filters, ?page=1&limit=50)
     router.get('/', async (req, res) => {
         try {
-            const { search, page, limit } = req.query;
-            let sql = `SELECT * FROM \`${tableName}\``;
+            const { search, trash, page, limit, sort, order } = req.query;
+            let conditions = [];
             let params = [];
 
-            if (search) {
-                const likeConditions = allowedFields.map(f => `\`${f}\` LIKE ?`).join(' OR ');
-                sql += ` WHERE ${likeConditions}`;
-                params = allowedFields.map(() => `%${search}%`);
+            // 1. Soft Delete Filter
+            if (trash === 'true' || trash === true) {
+                conditions.push('deleted_at IS NOT NULL');
+            } else {
+                conditions.push('deleted_at IS NULL');
             }
-            sql += ' ORDER BY id DESC';
 
+            // 2. Global Search across whitelist fields
+            if (search && search.trim() !== '') {
+                const searchPattern = `%${search.trim()}%`;
+                const searchClauses = allowedFields.map(f => `\`${f}\` LIKE ?`).join(' OR ');
+                conditions.push(`(${searchClauses})`);
+                allowedFields.forEach(() => params.push(searchPattern));
+            }
+
+            // 3. Faceted Column Filters (e.g. ?stage=Negotiation&priority=High)
+            for (const field of allowedFields) {
+                if (req.query[field] !== undefined && req.query[field] !== '') {
+                    conditions.push(`\`${field}\` = ?`);
+                    params.push(req.query[field]);
+                }
+            }
+
+            const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+            // 4. Safe Sorting
+            let sortField = 'id';
+            if (sort && allowedFields.includes(sort)) {
+                sortField = sort;
+            }
+            const sortOrder = (order && order.toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
+
+            let sql = `SELECT * FROM \`${tableName}\` ${whereClause} ORDER BY \`${sortField}\` ${sortOrder}`;
+
+            // 5. Pagination
             if (limit) {
-                const lim = parseInt(limit, 10) || 50;
-                const p = parseInt(page, 10) || 1;
+                const lim = Math.max(1, parseInt(limit, 10) || 50);
+                const p = Math.max(1, parseInt(page, 10) || 1);
                 const offset = (p - 1) * lim;
                 sql += ` LIMIT ${lim} OFFSET ${offset}`;
             }
@@ -40,7 +87,7 @@ function createCrudRouter(tableName, allowedFields) {
         }
     });
 
-    // GET single
+    // GET Single Record
     router.get('/:id', async (req, res) => {
         try {
             const [rows] = await db.query(`SELECT * FROM \`${tableName}\` WHERE id = ?`, [req.params.id]);
@@ -51,7 +98,7 @@ function createCrudRouter(tableName, allowedFields) {
         }
     });
 
-    // CREATE
+    // CREATE Record
     router.post('/', async (req, res) => {
         try {
             const fields = allowedFields.filter(f => req.body[f] !== undefined);
@@ -65,13 +112,17 @@ function createCrudRouter(tableName, allowedFields) {
                 `INSERT INTO \`${tableName}\` (${columns}) VALUES (${placeholders})`,
                 values
             );
-            res.status(201).json({ id: result.insertId, message: 'Record created successfully' });
+
+            const newId = result.insertId;
+            await logAudit(req, 'CREATE', newId, req.body);
+
+            res.status(201).json({ id: newId, message: 'Record created successfully' });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     });
 
-    // UPDATE
+    // UPDATE Record
     router.put('/:id', async (req, res) => {
         try {
             const fields = allowedFields.filter(f => req.body[f] !== undefined);
@@ -85,19 +136,51 @@ function createCrudRouter(tableName, allowedFields) {
                 `UPDATE \`${tableName}\` SET ${setClause} WHERE id = ?`,
                 values
             );
+
             if (result.affectedRows === 0) return res.status(404).json({ error: 'Record not found' });
+
+            await logAudit(req, 'UPDATE', req.params.id, req.body);
+
             res.json({ message: 'Record updated successfully' });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     });
 
-    // DELETE
+    // RESTORE Soft-Deleted Record
+    router.post('/:id/restore', async (req, res) => {
+        try {
+            const [result] = await db.query(
+                `UPDATE \`${tableName}\` SET deleted_at = NULL WHERE id = ?`,
+                [req.params.id]
+            );
+
+            if (result.affectedRows === 0) return res.status(404).json({ error: 'Record not found or not in trash' });
+
+            await logAudit(req, 'RESTORE', req.params.id);
+            res.json({ message: 'Record restored successfully' });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // DELETE (Soft Delete by default; Hard Delete if ?permanent=true)
     router.delete('/:id', async (req, res) => {
         try {
-            const [result] = await db.query(`DELETE FROM \`${tableName}\` WHERE id = ?`, [req.params.id]);
+            const isPermanent = req.query.permanent === 'true' || req.query.permanent === true;
+            let result;
+
+            if (isPermanent) {
+                [result] = await db.query(`DELETE FROM \`${tableName}\` WHERE id = ?`, [req.params.id]);
+                await logAudit(req, 'HARD_DELETE', req.params.id);
+            } else {
+                [result] = await db.query(`UPDATE \`${tableName}\` SET deleted_at = NOW() WHERE id = ?`, [req.params.id]);
+                await logAudit(req, 'SOFT_DELETE', req.params.id);
+            }
+
             if (result.affectedRows === 0) return res.status(404).json({ error: 'Record not found' });
-            res.json({ message: 'Record deleted successfully' });
+
+            res.json({ message: isPermanent ? 'Record permanently deleted' : 'Record moved to trash' });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }

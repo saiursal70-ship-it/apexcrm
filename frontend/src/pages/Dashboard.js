@@ -1,13 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-  LineChart, Line, XAxis, YAxis, CartesianGrid
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip
 } from 'recharts';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
-import { getDashboardStats, createRecord } from '../api/api';
+import ModernSalesChart from '../components/ModernSalesChart';
+import { getDashboardStats, createRecord, simulateInboundLeadWorkflow } from '../api/api';
 import { useAuth } from '../context/AuthContext';
+import { animateStagger, animateCounter, animateModalEnter, animateButtonPulse } from '../utils/animations';
 
 // Helper Sparkline SVG Component
 const MiniSparkline = ({ color = "#8b5cf6", id = "grad" }) => (
@@ -72,21 +73,7 @@ const CircularProgress = ({ percentage = 75 }) => {
   );
 };
 
-// Default Mock/Fallback Data for Charts
-const defaultSalesOverview = [
-  { month: 'Jan', thisYear: 8000, lastYear: 5000 },
-  { month: 'Feb', thisYear: 18000, lastYear: 10000 },
-  { month: 'Mar', thisYear: 28000, lastYear: 15000 },
-  { month: 'Apr', thisYear: 24000, lastYear: 18000 },
-  { month: 'May', thisYear: 38000, lastYear: 28000 },
-  { month: 'Jun', thisYear: 45000, lastYear: 32000 },
-  { month: 'Jul', thisYear: 58420, lastYear: 30000 },
-  { month: 'Aug', thisYear: 48000, lastYear: 42000 },
-  { month: 'Sep', thisYear: 54000, lastYear: 38000 },
-  { month: 'Oct', thisYear: 42000, lastYear: 36000 },
-  { month: 'Nov', thisYear: 52000, lastYear: 44000 },
-  { month: 'Dec', thisYear: 62000, lastYear: 48000 },
-];
+// Revenue by Source Distribution Data
 
 const revenueSourceData = [
   { name: 'Website', value: 38, color: '#8b5cf6' },
@@ -114,6 +101,14 @@ const Dashboard = () => {
   const [quickModal, setQuickModal] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [simulatingLead, setSimulatingLead] = useState(false);
+  const [autoToastMsg, setAutoToastMsg] = useState(null);
+
+  // Counter Refs for live count-up animation
+  const revRef = useRef(null);
+  const leadsRef = useRef(null);
+  const dealsRef = useRef(null);
+  const winRef = useRef(null);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -126,11 +121,86 @@ const Dashboard = () => {
     }
   }, []);
 
+  const handleSimulateInboundLead = async () => {
+    setSimulatingLead(true);
+    try {
+      const res = await simulateInboundLeadWorkflow();
+      const leadName = res.data?.data?.leadName || 'Website Lead';
+      const company = res.data?.data?.company || 'Inbound Inquiry';
+      setAutoToastMsg(res.data?.message || '⚡ Inbound lead captured automatically!');
+      
+      // Dispatch real-time notification to topbar bell
+      window.dispatchEvent(
+        new CustomEvent('crm-notification', {
+          detail: {
+            title: `New Lead Captured: ${leadName}`,
+            text: `${company} registered from website form. Follow-up call task assigned.`,
+            type: 'users',
+            color: '#4f46e5',
+            bg: '#e0e7ff',
+            route: '/leads'
+          }
+        })
+      );
+
+      await fetchStats();
+      setTimeout(() => setAutoToastMsg(null), 5000);
+    } catch (err) {
+      alert('Error simulating inbound lead: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setSimulatingLead(false);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
 
-  const openQuickModal = (type) => {
+  // Trigger Anime.js live counter and cards staggered entry
+  useEffect(() => {
+    if (!loading) {
+      // Trigger card cascade
+      animateStagger('.apex-kpi-card', { translateY: [28, 0], scale: [0.95, 1], duration: 700 });
+      animateStagger('.apex-mid-grid .apex-card', { translateY: [25, 0], duration: 650, delay: 200 });
+      animateStagger('.apex-bottom-grid .apex-card', { translateY: [25, 0], duration: 650, delay: 350 });
+      animateStagger('.deal-row-item', { translateX: [-18, 0], duration: 450, delay: 400 });
+
+      // Animate KPI numbers
+      if (revRef.current) {
+        const val = stats?.revenueThisMonth ? Number(stats.revenueThisMonth) : 584200;
+        animateCounter(revRef.current, val, { isCurrency: true, duration: 1200 });
+      }
+      if (leadsRef.current) {
+        const val = stats?.totalLeads ? Number(stats.totalLeads) : 1265;
+        animateCounter(leadsRef.current, val, { duration: 1000 });
+      }
+      if (dealsRef.current) {
+        const val = stats?.openOpportunities ? Number(stats.openOpportunities) : 256;
+        animateCounter(dealsRef.current, val, { duration: 1000 });
+      }
+      if (winRef.current) {
+        const val = stats?.winRate ? parseFloat(stats.winRate) : 24.6;
+        animateCounter(winRef.current, val, { suffix: '%', decimals: 1, duration: 1100 });
+      }
+    }
+  }, [loading, stats]);
+
+  // Modal open animation & keyboard shortcut
+  useEffect(() => {
+    if (quickModal) {
+      animateModalEnter('.quick-modal', '.quick-modal-overlay');
+    }
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && quickModal) {
+        setQuickModal(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [quickModal]);
+
+  const openQuickModal = (type, e) => {
+    if (e?.currentTarget) animateButtonPulse(e.currentTarget);
     setQuickModal(type);
     if (type === 'lead') {
       setForm({ lead_name: '', company_name: '', email: '', phone: '', source: 'Website', lead_status: 'New' });
@@ -180,7 +250,8 @@ const Dashboard = () => {
         { id: 4, name: 'Digital Marketing Campaign', company: 'Marketing Profs', amount: '₹5,430', stage: 'Negotiation', stageClass: 'negotiation', icon: 'users', color: '#06b6d4' }
       ];
 
-  const totalRevDisplay = stats?.revenueThisMonth ? `₹${Number(stats.revenueThisMonth).toLocaleString('en-IN')}` : '₹5,84,200';
+  const totalRevRaw = Number(stats?.totalRevenue ?? stats?.revenueThisMonth ?? stats?.closedWonRevenue ?? 0);
+  const totalRevDisplay = totalRevRaw > 0 ? `₹${totalRevRaw.toLocaleString('en-IN')}` : '₹84,70,000';
   const customersDisplay = stats?.totalLeads ? Number(stats.totalLeads).toLocaleString() : '1,265';
   const dealsDisplay = stats?.openOpportunities ? Number(stats.openOpportunities).toLocaleString() : '256';
   const winRateDisplay = stats?.winRate ? `${stats.winRate}%` : '24.6%';
@@ -193,18 +264,134 @@ const Dashboard = () => {
         <div className="apex-dash-header">
           <div>
             <h1 className="greeting-title">{getGreeting()}, {user?.name || 'Alex'}! 👋</h1>
-            <p className="greeting-sub">Here's what's happening with your business today.</p>
+            <p className="greeting-sub">Your business at a glance — performance, activity, and key insights.</p>
           </div>
           <div className="quick-add-pills">
-            <button className="quick-pill-btn" onClick={() => openQuickModal('lead')}>
+            <button className="quick-pill-btn" onClick={(e) => openQuickModal('lead', e)}>
               <Icon name="plus" size={15} /> Lead
             </button>
-            <button className="quick-pill-btn" onClick={() => openQuickModal('deal')}>
+            <button className="quick-pill-btn" onClick={(e) => openQuickModal('deal', e)}>
               <Icon name="plus" size={15} /> Deal
             </button>
-            <button className="quick-pill-btn" onClick={() => openQuickModal('task')}>
+            <button className="quick-pill-btn" onClick={(e) => openQuickModal('task', e)}>
               <Icon name="plus" size={15} /> Task
             </button>
+          </div>
+        </div>
+
+        {/* AUTOMATION LIVE NOTIFICATION TOAST */}
+        {autoToastMsg && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95))',
+            color: '#ffffff',
+            padding: '14px 20px',
+            borderRadius: '12px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            boxShadow: '0 10px 30px rgba(16, 185, 129, 0.35)',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            animation: 'fadeIn 0.3s ease-out'
+          }}>
+            <Icon name="bolt" size={20} />
+            <span>{autoToastMsg}</span>
+          </div>
+        )}
+
+        {/* ENTERPRISE WORKFLOW AUTOMATION COMMAND BAR */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8))',
+          border: '1px solid rgba(59, 130, 246, 0.3)',
+          borderRadius: '14px',
+          padding: '16px 20px',
+          marginBottom: '24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 14,
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 42,
+              height: 42,
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+            }}>
+              <Icon name="bolt" size={22} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+                  End-to-End Enterprise CRM Automation
+                </h3>
+                <span style={{
+                  background: 'rgba(37, 211, 102, 0.15)',
+                  color: '#25d366',
+                  border: '1px solid rgba(37, 211, 102, 0.3)',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '0.72rem',
+                  fontWeight: 700
+                }}>
+                  🟢 7/7 Engines Active
+                </span>
+              </div>
+              <p style={{ margin: '3px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
+                Website Inbound ➔ Follow-up Task ➔ Auto-WhatsApp ➔ Deal ➔ Quotation ➔ Tax Invoice ➔ Agile Project ➔ AMC Renewal
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={simulatingLead}
+              onClick={handleSimulateInboundLead}
+              style={{
+                background: 'rgba(59, 130, 246, 0.2)',
+                border: '1px solid rgba(59, 130, 246, 0.4)',
+                color: '#60a5fa',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <Icon name="bolt" size={14} />
+              <span>{simulatingLead ? 'Ingesting Inbound Lead...' : '⚡ Simulate Inbound Website Lead'}</span>
+            </button>
+
+            <Link
+              to="/leads"
+              className="btn btn-primary btn-sm"
+              style={{
+                background: '#2563eb',
+                borderColor: '#2563eb',
+                padding: '8px 18px',
+                borderRadius: '8px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <span>Explore Leads &amp; Convert ➔</span>
+            </Link>
           </div>
         </div>
 
@@ -222,7 +409,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="kpi-value-row">
-              <h2 className="kpi-number">{totalRevDisplay}</h2>
+              <h2 className="kpi-number" ref={revRef}>{totalRevDisplay}</h2>
             </div>
             <div className="kpi-growth-row">
               <span className="growth-tag positive">↑ 12.5%</span>
@@ -240,7 +427,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="kpi-value-row">
-              <h2 className="kpi-number">{customersDisplay}</h2>
+              <h2 className="kpi-number" ref={leadsRef}>{customersDisplay}</h2>
             </div>
             <div className="kpi-growth-row">
               <span className="growth-tag positive">↑ 18.2%</span>
@@ -258,7 +445,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="kpi-value-row">
-              <h2 className="kpi-number">{dealsDisplay}</h2>
+              <h2 className="kpi-number" ref={dealsRef}>{dealsDisplay}</h2>
             </div>
             <div className="kpi-growth-row">
               <span className="growth-tag orange">↑ 8.7%</span>
@@ -276,7 +463,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="kpi-value-row">
-              <h2 className="kpi-number">{winRateDisplay}</h2>
+              <h2 className="kpi-number" ref={winRef}>{winRateDisplay}</h2>
             </div>
             <div className="kpi-growth-row">
               <span className="growth-tag positive">↑ 11.3%</span>
@@ -288,49 +475,8 @@ const Dashboard = () => {
 
         {/* MIDDLE SECTION GRID: Sales Overview & Revenue by Source */}
         <div className="apex-mid-grid">
-          {/* Sales Overview Line Chart */}
-          <div className="apex-card sales-overview-card">
-            <div className="card-top-bar">
-              <div>
-                <h3 className="card-heading">Sales Overview</h3>
-                <span className="card-subheading">This Year vs Last Year</span>
-              </div>
-              <div className="card-actions">
-                <select className="chart-select-dropdown" defaultValue="This Year">
-                  <option value="This Year">This Year</option>
-                  <option value="Quarter">This Quarter</option>
-                  <option value="Month">This Month</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="chart-legend-pills">
-              <div className="legend-pill">
-                <span className="dot dot-purple"></span>
-                <span>This Year <b>{totalRevDisplay}</b></span>
-              </div>
-              <div className="legend-pill">
-                <span className="dot dot-blue"></span>
-                <span>Last Year <b>₹4,85,600</b></span>
-              </div>
-            </div>
-
-            <div className="chart-container-wrap">
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={defaultSalesOverview} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.06)" />
-                  <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v/1000}K`} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '10px', color: '#fff' }}
-                    itemStyle={{ color: '#38bdf8' }}
-                  />
-                  <Line type="monotone" dataKey="thisYear" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: '#8b5cf6', stroke: '#ffffff', strokeWidth: 2 }} activeDot={{ r: 7 }} />
-                  <Line type="monotone" dataKey="lastYear" stroke="#38bdf8" strokeWidth={3} dot={{ r: 4, fill: '#38bdf8', stroke: '#ffffff', strokeWidth: 2 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+          {/* Modern Sales Overview Interactive Component */}
+          <ModernSalesChart liveTotalRevenue={totalRevDisplay} />
 
           {/* Revenue by Source Donut Chart */}
           <div className="apex-card revenue-source-card">
@@ -355,13 +501,16 @@ const Dashboard = () => {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
+                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#ffffff', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
+                      itemStyle={{ color: '#38bdf8', fontWeight: 700 }}
+                      labelStyle={{ color: '#ffffff', fontWeight: 700 }}
+                      formatter={(value, name) => [`${value}% Contribution`, `${name}`]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="donut-center-info">
-                  <span className="donut-amount">{totalRevDisplay}</span>
-                  <span className="donut-label">Total</span>
+                  <span className="donut-amount" style={{ color: 'var(--color-text, #0f172a)' }}>{totalRevDisplay}</span>
+                  <span className="donut-label" style={{ color: 'var(--color-text-secondary, #64748b)' }}>Total</span>
                 </div>
               </div>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
@@ -7,11 +7,14 @@ import EntityGraphView from '../components/EntityGraphView';
 import WhatsAppModal from '../components/WhatsAppModal';
 import InvoicePrintModal from '../components/InvoicePrintModal';
 import QuotationPrintModal from '../components/QuotationPrintModal';
+import WorkflowConvertModal from '../components/WorkflowConvertModal';
 import SkeletonLoader from '../components/SkeletonLoader';
 import SlideDrawer from '../components/SlideDrawer';
 import FormWizardModal from '../components/FormWizardModal';
+import FacetedFilterBar from '../components/FacetedFilterBar';
 import entityConfig from '../config/entityConfig';
-import { getAll, createRecord, updateRecord, deleteRecord } from '../api/api';
+import { getAll, createRecord, updateRecord, deleteRecord, restoreRecord } from '../api/api';
+import { animateTableRows, animateButtonPulse } from '../utils/animations';
 
 const emptyFormFor = (fields) => {
   const obj = {};
@@ -19,12 +22,13 @@ const emptyFormFor = (fields) => {
   return obj;
 };
 
-// Modules supporting multi-view layouts
-const dualViewModules = ['deals', 'tasks', 'appointments'];
+// Modules supporting multi-view layouts (Table & Kanban Board)
+const dualViewModules = ['deals', 'tasks', 'appointments', 'tickets', 'campaigns'];
 
 const EntityPage = () => {
   const { entity } = useParams();
   const config = entityConfig[entity];
+  const tableRef = useRef(null);
 
   const isDualViewModule = dualViewModules.includes(entity);
   const isDeals = entity === 'deals';
@@ -36,15 +40,47 @@ const EntityPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(config ? emptyFormFor(config.fields) : {});
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState({});
+  const [isTrashMode, setIsTrashMode] = useState(false);
   const [whatsappRecipient, setWhatsappRecipient] = useState(null);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState(null);
   const [selectedQuotationForPrint, setSelectedQuotationForPrint] = useState(null);
   const [drawerRecord, setDrawerRecord] = useState(null);
+  const [drawerInitialEdit, setDrawerInitialEdit] = useState(false);
+  const [workflowModalState, setWorkflowModalState] = useState({
+    isOpen: false,
+    type: 'convert_lead',
+    record: null
+  });
   const [viewMode, setViewMode] = useState(() => {
+    if (entity === 'leads') return 'table';
     return localStorage.getItem(`crm_view_mode_${entity}`) || 'kanban';
   });
 
-  const handleViewModeChange = (mode) => {
+  const handleWorkflowAction = (type, record) => {
+    setDrawerRecord(null);
+    setWorkflowModalState({ isOpen: true, type, record });
+  };
+
+  // Fast, instant client-side + server-side faceted filter computation
+  const displayedRecords = useMemo(() => {
+    if (!Array.isArray(records)) return [];
+    return records.filter((r) => {
+      for (const [field, val] of Object.entries(filters)) {
+        if (val !== undefined && val !== null && val !== '') {
+          const recordVal = String(r[field] || '').toLowerCase().trim();
+          const targetVal = String(val).toLowerCase().trim();
+          if (recordVal !== targetVal) {
+            return false;
+          }
+        }
+      }
+      return true;
+    });
+  }, [records, filters]);
+
+  const handleViewModeChange = (mode, e) => {
+    if (e?.currentTarget) animateButtonPulse(e.currentTarget);
     setViewMode(mode);
     localStorage.setItem(`crm_view_mode_${entity}`, mode);
   };
@@ -53,20 +89,32 @@ const EntityPage = () => {
     if (!config) return;
     setLoading(true);
     try {
-      const res = await getAll(entity, search);
-      setRecords(res.data);
+      const queryParams = {
+        search,
+        trash: isTrashMode,
+        ...filters
+      };
+      const res = await getAll(entity, queryParams);
+      setRecords(Array.isArray(res.data) ? res.data : []);
       setError(null);
     } catch (err) {
       setError('Could not load data. Is the backend server running?');
     } finally {
       setLoading(false);
     }
-  }, [entity, search, config]);
+  }, [entity, search, isTrashMode, filters, config]);
 
   useEffect(() => {
     setForm(config ? emptyFormFor(config.fields) : {});
     setEditingId(null);
     setShowForm(false);
+    setFilters({});
+    setIsTrashMode(false);
+    if (entity === 'leads') {
+      setViewMode('table');
+    } else {
+      setViewMode(localStorage.getItem(`crm_view_mode_${entity}`) || 'kanban');
+    }
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entity]);
@@ -75,7 +123,14 @@ const EntityPage = () => {
     const timeout = setTimeout(fetchData, 300);
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, filters, isTrashMode]);
+
+  // Anime.js Table row cascading wave entrance
+  useEffect(() => {
+    if (!loading && displayedRecords.length > 0 && tableRef.current) {
+      animateTableRows(tableRef.current);
+    }
+  }, [loading, displayedRecords, viewMode]);
 
   if (!config) {
     return (
@@ -84,6 +139,21 @@ const EntityPage = () => {
       </Layout>
     );
   }
+
+  const handleFilterChange = (field, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+  };
+
+  const handleToggleTrashMode = () => {
+    setIsTrashMode((prev) => !prev);
+  };
 
   const handleSubmit = async (submittedData) => {
     const dataToSend = submittedData || form;
@@ -124,25 +194,29 @@ const EntityPage = () => {
   };
 
   const handleEdit = (record) => {
-    const populated = {};
-    config.fields.forEach((f) => {
-      let val = record[f.name] ?? '';
-      if (f.type === 'date' && val) val = String(val).substring(0, 10);
-      populated[f.name] = val;
-    });
-    setForm(populated);
-    setEditingId(record.id);
-    setShowForm(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setDrawerRecord(record);
+    setDrawerInitialEdit(true);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this record?')) return;
+    const msg = isTrashMode
+      ? '⚠️ Permanent Delete: Are you sure you want to permanently destroy this record from the database?'
+      : 'Move this record to Trash?';
+    if (!window.confirm(msg)) return;
     try {
-      await deleteRecord(entity, id);
+      await deleteRecord(entity, id, isTrashMode);
       fetchData();
     } catch (err) {
       alert('Error deleting record');
+    }
+  };
+
+  const handleRestore = async (id) => {
+    try {
+      await restoreRecord(entity, id);
+      fetchData();
+    } catch (err) {
+      alert('Error restoring record: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -168,44 +242,13 @@ const EntityPage = () => {
   const formatCell = (record, colName) => {
     const val = record[colName];
 
-    if (colName === 'due_amount') {
-      const total = Number(record.amount || 0);
-      const paid = Number(record.paid_amount || 0);
-      const due = Math.max(0, total - paid);
+    // CURRENCY FORMATTING
+    if (colName === 'value' || colName === 'price' || colName === 'budget' || colName === 'amount' || colName === 'paid_amount' || colName === 'due_amount' || colName === 'total_amount') {
+      if (val === null || val === undefined || val === '') return '—';
+      const num = Number(val);
       return (
-        <span style={{ fontWeight: 800, color: due > 0 ? '#ef4444' : '#10b981' }}>
-          ₹{due.toLocaleString('en-IN')}
-        </span>
-      );
-    }
-
-    if (val === null || val === undefined || val === '') return '-';
-
-    // TYPE BADGE PILL
-    if (colName === 'type' || colName === 'task_type') {
-      const v = String(val).toLowerCase();
-      let badgeStyle = { bg: 'rgba(99, 102, 241, 0.15)', text: '#6366f1', border: 'rgba(99, 102, 241, 0.3)', icon: '📋' };
-      if (v.includes('call')) badgeStyle = { bg: 'rgba(59, 130, 246, 0.15)', text: '#3b82f6', border: 'rgba(59, 130, 246, 0.35)', icon: '📞' };
-      if (v.includes('email')) badgeStyle = { bg: 'rgba(139, 92, 246, 0.15)', text: '#8b5cf6', border: 'rgba(139, 92, 246, 0.35)', icon: '✉️' };
-      if (v.includes('meet') || v.includes('appoint')) badgeStyle = { bg: 'rgba(16, 185, 129, 0.15)', text: '#10b981', border: 'rgba(16, 185, 129, 0.35)', icon: '📅' };
-      return (
-        <span
-          className="badge-pill"
-          style={{
-            background: badgeStyle.bg,
-            color: badgeStyle.text,
-            border: `1px solid ${badgeStyle.border}`,
-            padding: '4px 10px',
-            borderRadius: '9999px',
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '5px'
-          }}
-        >
-          <span>{badgeStyle.icon}</span>
-          <span>{val}</span>
+        <span style={{ fontWeight: 700, color: 'inherit' }}>
+          ₹{num.toLocaleString('en-IN')}
         </span>
       );
     }
@@ -240,14 +283,14 @@ const EntityPage = () => {
     }
 
     // STATUS OR STAGE BADGE PILL
-    if (colName === 'status' || colName === 'stage') {
+    if (colName === 'status' || colName === 'stage' || colName === 'lead_status' || colName === 'payment_status') {
       const v = String(val).toLowerCase();
       let badgeStyle = { bg: 'rgba(59, 130, 246, 0.15)', text: '#3b82f6', border: 'rgba(59, 130, 246, 0.3)' };
-      if (v.includes('completed') || v.includes('won') || v.includes('paid') || v.includes('active') || v.includes('closed won')) {
+      if (v.includes('completed') || v.includes('won') || v.includes('paid') || v.includes('active') || v.includes('closed won') || v.includes('qualified')) {
         badgeStyle = { bg: 'rgba(16, 185, 129, 0.15)', text: '#10b981', border: 'rgba(16, 185, 129, 0.35)' };
-      } else if (v.includes('pending') || v.includes('progress') || v.includes('open') || v.includes('contacted') || v.includes('proposal')) {
+      } else if (v.includes('pending') || v.includes('progress') || v.includes('open') || v.includes('contacted') || v.includes('proposal') || v.includes('new')) {
         badgeStyle = { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b', border: 'rgba(245, 158, 11, 0.35)' };
-      } else if (v.includes('lost') || v.includes('cancel') || v.includes('overdue') || v.includes('unpaid')) {
+      } else if (v.includes('lost') || v.includes('cancel') || v.includes('overdue') || v.includes('unpaid') || v.includes('junk')) {
         badgeStyle = { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444', border: 'rgba(239, 68, 68, 0.35)' };
       }
       return (
@@ -270,22 +313,30 @@ const EntityPage = () => {
       );
     }
 
-    const field = config.fields.find((f) => f.name === colName);
-    if (field?.type === 'date') return new Date(val).toLocaleDateString();
-    if (field?.name === 'value' || field?.name === 'amount' || field?.name === 'paid_amount' || field?.name === 'total_amount' || field?.name === 'price' || field?.name === 'budget') {
-      return `₹${Number(val).toLocaleString('en-IN')}`;
+    if (val === null || val === undefined || val === '') return '—';
+    if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+    if (String(val).match(/^\d{4}-\d{2}-\d{2}T/)) {
+      return String(val).substring(0, 10);
     }
-    return val;
+    return String(val);
   };
 
   const handleExportCSV = () => {
-    if (!records || records.length === 0) return alert('No data to export.');
+    if (!records || records.length === 0) {
+      alert('No data available to export');
+      return;
+    }
     const headers = ['ID', ...config.columns];
-    const rows = records.map(r => [
+    const rows = records.map((r) => [
       r.id,
-      ...config.columns.map(c => `"${String(r[c] || '').replace(/"/g, '""')}"`)
+      ...config.columns.map((c) => {
+        const v = r[c];
+        if (v === null || v === undefined) return '';
+        return `"${String(v).replace(/"/g, '""')}"`;
+      })
     ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
@@ -297,6 +348,7 @@ const EntityPage = () => {
 
   return (
     <Layout showAdd onAddClick={openAddForm} searchValue={search} onSearchChange={setSearch}>
+      {/* Top Toolbar */}
       <div className="dashboard-toolbar">
         <div className="toolbar-left-info">
           <p>{records.length} record(s) found</p>
@@ -314,7 +366,7 @@ const EntityPage = () => {
               <button
                 type="button"
                 className={`view-toggle-btn ${viewMode === 'kanban' ? 'active' : ''}`}
-                onClick={() => handleViewModeChange('kanban')}
+                onClick={(e) => handleViewModeChange('kanban', e)}
                 title="Kanban Board View"
               >
                 <Icon name="grid" size={15} />
@@ -324,7 +376,7 @@ const EntityPage = () => {
               <button
                 type="button"
                 className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
-                onClick={() => handleViewModeChange('table')}
+                onClick={(e) => handleViewModeChange('table', e)}
                 title="Table View"
               >
                 <Icon name="menu" size={15} />
@@ -336,7 +388,7 @@ const EntityPage = () => {
                 <button
                   type="button"
                   className={`view-toggle-btn ${viewMode === 'graph' ? 'active' : ''}`}
-                  onClick={() => handleViewModeChange('graph')}
+                  onClick={(e) => handleViewModeChange('graph', e)}
                   title="Graph Analytics View"
                 >
                   <Icon name="chart" size={15} />
@@ -351,6 +403,17 @@ const EntityPage = () => {
           </button>
         </div>
       </div>
+
+      {/* FACETED MULTI-DIMENSIONAL FILTER BAR */}
+      <FacetedFilterBar
+        config={config}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onClearFilters={handleClearFilters}
+        totalCount={displayedRecords.length}
+        isTrashMode={isTrashMode}
+        onToggleTrashMode={handleToggleTrashMode}
+      />
 
       <FormWizardModal
         isOpen={showForm}
@@ -372,21 +435,26 @@ const EntityPage = () => {
         <SkeletonLoader variant={viewMode === 'kanban' ? 'card' : 'table'} count={5} />
       ) : (isDeals && viewMode === 'graph') ? (
         /* GRAPH ANALYTICS VIEW EXCLUSIVELY FOR DEALS */
-        <EntityGraphView config={config} entity={entity} records={records} />
-      ) : (isDualViewModule && viewMode === 'kanban') ? (
+        <EntityGraphView config={config} entity={entity} records={displayedRecords} />
+      ) : (isDualViewModule && viewMode === 'kanban' && !isTrashMode) ? (
         /* KANBAN BOARD VIEW */
         <KanbanBoard
           config={config}
-          records={records}
+          records={displayedRecords}
           onStatusChange={handleStatusChange}
+          onCardClick={(r) => {
+            setDrawerRecord(r);
+            setDrawerInitialEdit(false);
+          }}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onWhatsApp={setWhatsappRecipient}
           onPrintInvoice={(invoiceRec) => setSelectedInvoiceForPrint(invoiceRec)}
+          onWorkflowAction={handleWorkflowAction}
         />
       ) : (
         /* TABLE VIEW FORMAT */
-        <div className="table-wrapper">
+        <div className="table-wrapper" ref={tableRef}>
           <table className="data-table">
             <thead>
               <tr>
@@ -396,50 +464,128 @@ const EntityPage = () => {
               </tr>
             </thead>
             <tbody>
-              {records.map((r, rIdx) => (
+              {displayedRecords.map((r, rIdx) => (
                 <tr
                   key={`row-${r.id || rIdx}-${rIdx}`}
                   style={{ cursor: 'pointer' }}
                   onClick={(e) => {
-                    // Prevent opening drawer if user clicks action button
                     if (e.target.closest('.table-actions')) return;
                     setDrawerRecord(r);
+                    setDrawerInitialEdit(false);
                   }}
+                  title="Click to view details in Side Drawer"
                 >
                   <td>{r.id}</td>
                   {config.columns.map((c, cIdx) => <td key={`td-${r.id || rIdx}-${c}-${cIdx}`}>{formatCell(r, c)}</td>)}
                   <td className="table-actions" onClick={(e) => e.stopPropagation()}>
-                    {r.phone && (
-                      <button className="btn-icon whatsapp action-tooltip-btn" onClick={() => setWhatsappRecipient(r)}>
-                        <Icon name="whatsapp" size={15} />
-                        <span className="action-hover-tag">WhatsApp</span>
-                      </button>
+                    {isTrashMode ? (
+                      <>
+                        <button
+                          className="btn-icon action-tooltip-btn"
+                          style={{ background: '#dcfce7', color: '#16a34a' }}
+                          onClick={() => handleRestore(r.id)}
+                          title="Restore Record"
+                        >
+                          <Icon name="refresh" size={15} />
+                          <span className="action-hover-tag">Restore</span>
+                        </button>
+                        <button
+                          className="btn-icon delete action-tooltip-btn"
+                          onClick={() => handleDelete(r.id)}
+                          title="Permanent Delete"
+                        >
+                          <Icon name="trash" size={15} />
+                          <span className="action-hover-tag">Permanent Delete</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* 1-CLICK WORKFLOW CONVERSION SHORTCUT BUTTONS */}
+                        {entity === 'leads' && (
+                          <button
+                            className="btn-icon action-tooltip-btn"
+                            style={{ background: 'rgba(59, 130, 246, 0.18)', color: '#2563eb', border: '1px solid rgba(59, 130, 246, 0.35)' }}
+                            onClick={() => handleWorkflowAction('convert_lead', r)}
+                            title="1-Click Convert to Contact, Company & Deal"
+                          >
+                            <Icon name="bolt" size={15} />
+                            <span className="action-hover-tag">Convert Lead</span>
+                          </button>
+                        )}
+                        {entity === 'deals' && (
+                          <button
+                            className="btn-icon action-tooltip-btn"
+                            style={{ background: 'rgba(16, 185, 129, 0.18)', color: '#059669', border: '1px solid rgba(16, 185, 129, 0.35)' }}
+                            onClick={() => handleWorkflowAction('deal_to_quote', r)}
+                            title="1-Click Generate Quotation"
+                          >
+                            <Icon name="quotation" size={15} />
+                            <span className="action-hover-tag">Create Quote</span>
+                          </button>
+                        )}
+                        {entity === 'quotations' && (
+                          <button
+                            className="btn-icon action-tooltip-btn"
+                            style={{ background: 'rgba(245, 158, 11, 0.18)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.35)' }}
+                            onClick={() => handleWorkflowAction('quote_to_invoice', r)}
+                            title="1-Click Approve & Generate Tax Invoice"
+                          >
+                            <Icon name="invoice" size={15} />
+                            <span className="action-hover-tag">Approve & Invoice</span>
+                          </button>
+                        )}
+                        {entity === 'invoices' && (
+                          <button
+                            className="btn-icon action-tooltip-btn"
+                            style={{ background: 'rgba(139, 92, 246, 0.18)', color: '#7c3aed', border: '1px solid rgba(139, 92, 246, 0.35)' }}
+                            onClick={() => handleWorkflowAction('invoice_to_project', r)}
+                            title="1-Click Launch Project Workspace"
+                          >
+                            <Icon name="grid" size={15} />
+                            <span className="action-hover-tag">Launch Workspace</span>
+                          </button>
+                        )}
+
+                        {r.phone && (
+                          <button className="btn-icon whatsapp action-tooltip-btn" onClick={() => setWhatsappRecipient(r)}>
+                            <Icon name="whatsapp" size={15} />
+                            <span className="action-hover-tag">WhatsApp</span>
+                          </button>
+                        )}
+                        {(r.invoice_number || entity === 'invoices') && (
+                          <button className="btn-icon invoice-btn action-tooltip-btn" onClick={() => setSelectedInvoiceForPrint(r)}>
+                            <Icon name="invoice" size={15} />
+                            <span className="action-hover-tag">Invoice</span>
+                          </button>
+                        )}
+                        {(r.quotation_number || entity === 'quotations') && (
+                          <button className="btn-icon invoice-btn action-tooltip-btn" style={{ background: '#f3e8ff', color: '#7c3aed' }} onClick={() => setSelectedQuotationForPrint(r)}>
+                            <Icon name="quotation" size={15} />
+                            <span className="action-hover-tag">Print Quotation</span>
+                          </button>
+                        )}
+                        <button
+                          className="btn-icon edit action-tooltip-btn"
+                          onClick={() => handleEdit(r)}
+                        >
+                          <Icon name="edit" size={15} />
+                          <span className="action-hover-tag">Edit in Drawer</span>
+                        </button>
+                        <button className="btn-icon delete action-tooltip-btn" onClick={() => handleDelete(r.id)}>
+                          <Icon name="trash" size={15} />
+                          <span className="action-hover-tag">Move to Trash</span>
+                        </button>
+                      </>
                     )}
-                    {(r.invoice_number || entity === 'invoices') && (
-                      <button className="btn-icon invoice-btn action-tooltip-btn" onClick={() => setSelectedInvoiceForPrint(r)}>
-                        <Icon name="invoice" size={15} />
-                        <span className="action-hover-tag">Invoice</span>
-                      </button>
-                    )}
-                    {(r.quotation_number || entity === 'quotations') && (
-                      <button className="btn-icon invoice-btn action-tooltip-btn" style={{ background: '#f3e8ff', color: '#7c3aed' }} onClick={() => setSelectedQuotationForPrint(r)}>
-                        <Icon name="quotation" size={15} />
-                        <span className="action-hover-tag">Print Quotation</span>
-                      </button>
-                    )}
-                    <button className="btn-icon edit action-tooltip-btn" onClick={() => handleEdit(r)}>
-                      <Icon name="edit" size={15} />
-                      <span className="action-hover-tag">Edit</span>
-                    </button>
-                    <button className="btn-icon delete action-tooltip-btn" onClick={() => handleDelete(r.id)}>
-                      <Icon name="trash" size={15} />
-                      <span className="action-hover-tag">Delete</span>
-                    </button>
                   </td>
                 </tr>
               ))}
-              {records.length === 0 && (
-                <tr><td colSpan={config.columns.length + 2} className="empty-row">No records found</td></tr>
+              {displayedRecords.length === 0 && (
+                <tr>
+                  <td colSpan={config.columns.length + 2} className="empty-row">
+                    {isTrashMode ? '🗑️ Trash is empty for this module' : 'No records found matching filters'}
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
@@ -449,19 +595,55 @@ const EntityPage = () => {
       {/* Slide-over Detail Drawer */}
       <SlideDrawer
         isOpen={Boolean(drawerRecord)}
-        onClose={() => setDrawerRecord(null)}
-        title={drawerRecord?.name || drawerRecord?.title || drawerRecord?.subject || `Record #${drawerRecord?.id}`}
-        subtitle={drawerRecord?.email || drawerRecord?.company_name || drawerRecord?.status}
+        onClose={() => {
+          setDrawerRecord(null);
+          setDrawerInitialEdit(false);
+        }}
+        title={drawerRecord?.deal_name || drawerRecord?.company_name || drawerRecord?.contact_name || drawerRecord?.lead_name || drawerRecord?.product_name || drawerRecord?.task_name || drawerRecord?.subject || `Record #${drawerRecord?.id}`}
+        subtitle={drawerRecord?.email || drawerRecord?.phone || drawerRecord?.account_name || drawerRecord?.assigned_to || ''}
         record={drawerRecord}
         fields={config.fields}
         entity={entity}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onWhatsApp={setWhatsappRecipient}
-        onPrintInvoice={setSelectedInvoiceForPrint}
-        onPrintQuotation={setSelectedQuotationForPrint}
+        initialEditMode={drawerInitialEdit}
+        onSave={async (id, updatedData) => {
+          await updateRecord(entity, id, updatedData);
+          fetchData();
+        }}
+        onRefresh={fetchData}
+        onDelete={(id) => {
+          setDrawerRecord(null);
+          handleDelete(id);
+        }}
+        onWhatsApp={(rec) => {
+          setDrawerRecord(null);
+          setWhatsappRecipient(rec);
+        }}
+        onPrintInvoice={(rec) => {
+          setDrawerRecord(null);
+          setSelectedInvoiceForPrint(rec);
+        }}
+        onPrintQuotation={(rec) => {
+          setDrawerRecord(null);
+          setSelectedQuotationForPrint(rec);
+        }}
+        onWorkflowAction={(type, rec) => {
+          setDrawerRecord(null);
+          handleWorkflowAction(type, rec);
+        }}
       />
 
+      {/* 1-Click Workflow Conversion Modal */}
+      <WorkflowConvertModal
+        isOpen={workflowModalState.isOpen}
+        type={workflowModalState.type}
+        record={workflowModalState.record}
+        onClose={() => setWorkflowModalState({ isOpen: false, type: 'convert_lead', record: null })}
+        onSuccess={() => {
+          fetchData();
+        }}
+      />
+
+      {/* WhatsApp Quick Message Modal */}
       {whatsappRecipient && (
         <WhatsAppModal
           recipient={whatsappRecipient}
@@ -469,6 +651,7 @@ const EntityPage = () => {
         />
       )}
 
+      {/* Official Tax Invoice Print Modal */}
       {selectedInvoiceForPrint && (
         <InvoicePrintModal
           invoice={selectedInvoiceForPrint}
@@ -476,6 +659,7 @@ const EntityPage = () => {
         />
       )}
 
+      {/* Commercial Quotation Print Modal */}
       {selectedQuotationForPrint && (
         <QuotationPrintModal
           quotation={selectedQuotationForPrint}

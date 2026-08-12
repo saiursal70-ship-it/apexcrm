@@ -1,13 +1,20 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Icon from './Icon';
+import { animateStagger, animateKanbanLift, animateKanbanSnap } from '../utils/animations';
 
 // Global reference for bulletproof drag-and-drop state transfer
 let activeKanbanDraggedId = null;
 
-const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhatsApp, onPrintInvoice }) => {
+const KanbanBoard = ({ config, records, onStatusChange, onCardClick, onEdit, onDelete, onWhatsApp, onPrintInvoice, onWorkflowAction }) => {
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
   const draggedIdRef = useRef(null);
+
+  // Trigger Anime.js staggered entrance on mount / records update
+  useEffect(() => {
+    animateStagger('.kanban-column', { translateY: [25, 0], scale: [0.97, 1], duration: 550 });
+    animateStagger('.kanban-card', { translateY: [14, 0], opacity: [0, 1], duration: 400 });
+  }, [config.id, records.length]);
 
   // Determine status field and available columns
   const statusField = config.statusField || 'status';
@@ -27,6 +34,7 @@ const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhat
     activeKanbanDraggedId = id;
     setDraggedId(id);
     draggedIdRef.current = id;
+    if (e.currentTarget) animateKanbanLift(e.currentTarget);
     try {
       e.dataTransfer.setData('text/plain', String(id));
       e.dataTransfer.setData('text', String(id));
@@ -65,6 +73,9 @@ const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhat
     if (id !== null && id !== undefined && id !== '') {
       const recordId = isNaN(Number(id)) ? id : Number(id);
       onStatusChange(recordId, columnStatus);
+      // Visual drop bounce feedback
+      const targetCardEl = document.querySelector(`[data-card-id="${id}"]`);
+      if (targetCardEl) animateKanbanSnap(targetCardEl);
     }
 
     activeKanbanDraggedId = null;
@@ -134,13 +145,20 @@ const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhat
                   return (
                     <div
                       key={cardKey}
+                      data-card-id={r.id}
                       className={`kanban-card ${draggedId === r.id ? 'is-dragging' : ''}`}
                       draggable="true"
                       onDragStart={(e) => handleDragStart(e, r.id)}
                       onDragEnd={handleDragEnd}
                       onDragOver={(e) => handleDragOver(e, colStatus)}
                       onDrop={(e) => handleDrop(e, colStatus)}
-                      style={{ cursor: 'grab', userSelect: 'none' }}
+                      onClick={(e) => {
+                        if (e.target.closest('.kanban-card-actions') || e.target.closest('button')) return;
+                        if (onCardClick) onCardClick(r);
+                        else if (onEdit) onEdit(r);
+                      }}
+                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                      title="Click card to open in Side Drawer"
                     >
                       <div className="kanban-card-header">
                         <h4 className="kanban-card-title">{titleVal}</h4>
@@ -186,11 +204,42 @@ const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhat
 
                       <div className="kanban-card-footer">
                         <div className="kanban-card-actions">
+                          {onWorkflowAction && (r.lead_status !== undefined || config.label === 'Leads') && (
+                            <button
+                              type="button"
+                              className="kanban-action-btn action-tooltip-btn"
+                              style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onWorkflowAction('convert_lead', r);
+                              }}
+                            >
+                              <Icon name="bolt" size={13} />
+                              <span className="action-hover-tag">Convert Lead</span>
+                            </button>
+                          )}
+                          {onWorkflowAction && (r.deal_name !== undefined || config.label === 'Deals') && (
+                            <button
+                              type="button"
+                              className="kanban-action-btn action-tooltip-btn"
+                              style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onWorkflowAction('deal_to_quote', r);
+                              }}
+                            >
+                              <Icon name="document" size={13} />
+                              <span className="action-hover-tag">Create Quotation</span>
+                            </button>
+                          )}
                           {r.phone && (
                             <button
                               type="button"
                               className="kanban-action-btn whatsapp-btn action-tooltip-btn"
-                              onClick={() => onWhatsApp(r)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onWhatsApp(r);
+                              }}
                             >
                               <Icon name="whatsapp" size={13} />
                               <span className="action-hover-tag">WhatsApp</span>
@@ -200,7 +249,10 @@ const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhat
                             <button
                               type="button"
                               className="kanban-action-btn invoice-btn action-tooltip-btn"
-                              onClick={() => onPrintInvoice(r)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onPrintInvoice(r);
+                              }}
                             >
                               <Icon name="invoice" size={13} />
                               <span className="action-hover-tag">Invoice</span>
@@ -208,16 +260,11 @@ const KanbanBoard = ({ config, records, onStatusChange, onEdit, onDelete, onWhat
                           )}
                           <button
                             type="button"
-                            className="kanban-action-btn edit-btn action-tooltip-btn"
-                            onClick={() => onEdit(r)}
-                          >
-                            <Icon name="edit" size={13} />
-                            <span className="action-hover-tag">Edit</span>
-                          </button>
-                          <button
-                            type="button"
                             className="kanban-action-btn delete-btn action-tooltip-btn"
-                            onClick={() => onDelete(r.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete(r.id);
+                            }}
                           >
                             <Icon name="trash" size={13} />
                             <span className="action-hover-tag">Delete</span>

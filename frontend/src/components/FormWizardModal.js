@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from './Icon';
+import { animateModalEnter, animateStagger } from '../utils/animations';
 
 /**
  * FormWizardModal Component
@@ -18,6 +19,8 @@ const FormWizardModal = ({
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
   const [fieldErrors, setFieldErrors] = useState({});
+  const modalRef = useRef(null);
+  const overlayRef = useRef(null);
 
   // Divide fields into 2 or 3 steps logically
   const half = Math.ceil(fields.length / 2);
@@ -28,6 +31,7 @@ const FormWizardModal = ({
 
   useEffect(() => {
     if (isOpen) {
+      animateModalEnter(modalRef.current, overlayRef.current);
       // Check for saved draft if creating new record
       if (!editingId) {
         const draftKey = `crm_form_draft_${entity}`;
@@ -48,6 +52,22 @@ const FormWizardModal = ({
       setFieldErrors({});
     }
   }, [isOpen, initialData, editingId, entity]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      animateStagger('.form-group', { translateY: [12, 0], opacity: [0, 1], duration: 300 });
+    }
+  }, [currentStep, isOpen]);
 
   if (!isOpen) return null;
 
@@ -105,8 +125,8 @@ const FormWizardModal = ({
   const activeFields = currentStep === 1 ? step1Fields : step2Fields;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content wizard-modal-content glass-card" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" ref={overlayRef} onClick={onClose}>
+      <div className="modal-content wizard-modal-content glass-card" ref={modalRef} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <div className="wizard-header-title">

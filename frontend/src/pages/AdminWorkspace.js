@@ -3,6 +3,8 @@ import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import WorkflowConvertModal from '../components/WorkflowConvertModal';
+import { animateStagger } from '../utils/animations';
 
 // Initial sample data matching the exact screenshot items
 const INITIAL_SPRINT_TASKS = [
@@ -201,6 +203,7 @@ const AdminWorkspace = () => {
   // Modal states
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [isSprintModalOpen, setIsSprintModalOpen] = useState(false);
+  const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
 
   // New task form state
   const [newTaskForm, setNewTaskForm] = useState({
@@ -232,6 +235,22 @@ const AdminWorkspace = () => {
     };
     fetchTasks();
   }, [token]);
+
+  useEffect(() => {
+    animateStagger('.sprint-column', { translateY: [18, 0], scale: [0.98, 1], duration: 500 });
+    animateStagger('.sprint-task-card', { translateY: [12, 0], opacity: [0, 1], duration: 350 });
+  }, [tasks.length, selectedEpic, selectedAssignee]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsNewTaskModalOpen(false);
+        setIsSprintModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -403,7 +422,10 @@ const AdminWorkspace = () => {
                 <option value="Mobile App v2">Mobile App v2</option>
               </select>
             </div>
-            <h1 className="jira-page-title">Board</h1>
+            <h1 className="jira-page-title">Admin Board</h1>
+            <p className="jira-board-subtitle" style={{ fontSize: '0.88rem', color: '#94a3b8', margin: '2px 0 0', fontWeight: 500 }}>
+              Control users, permissions, and your CRM workspace.
+            </p>
           </div>
 
           <div className="jira-header-actions">
@@ -420,6 +442,15 @@ const AdminWorkspace = () => {
               onClick={() => setIsSprintModalOpen(true)}
             >
               Complete sprint
+            </button>
+            <button 
+              type="button" 
+              className="btn-jira-primary"
+              style={{ background: 'linear-gradient(135deg, #ec4899, #d946ef)', borderColor: '#ec4899' }}
+              onClick={() => setIsHandoverModalOpen(true)}
+              title="Deliver Project, Create Warranty Support Ticket & Schedule AMC Renewal"
+            >
+              🎉 Handover & AMC
             </button>
             <button 
               type="button" 
@@ -749,6 +780,18 @@ const AdminWorkspace = () => {
             </div>
           </div>
         )}
+
+        {/* 1-CLICK PROJECT HANDOVER & AMC SETUP MODAL */}
+        <WorkflowConvertModal
+          isOpen={isHandoverModalOpen}
+          type="complete_delivery"
+          record={{ project_name: selectedProject, client_name: selectedProject }}
+          onClose={() => setIsHandoverModalOpen(false)}
+          onSuccess={() => {
+            setTasks((prev) => prev.map((t) => ({ ...t, status: 'DONE' })));
+            showToast('🎉 Project delivery completed! Support Ticket & AMC Deal created.');
+          }}
+        />
       </div>
     </Layout>
   );

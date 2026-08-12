@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import ApexDevLogo from '../components/ApexDevLogo';
 import { getDashboardStats, getAll } from '../api/api';
+import { animateStagger } from '../utils/animations';
 
 const COLORS = ['#2563eb', '#06b6d4', '#f59e0b', '#ef4444', '#8b5cf6', '#10b981'];
 
@@ -26,6 +27,14 @@ const Reports = () => {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!loading && stats) {
+      animateStagger('.report-kpi-card', { translateY: [20, 0], scale: [0.96, 1], duration: 600 });
+      animateStagger('.report-chart-card', { translateY: [25, 0], duration: 650, delay: 200 });
+      animateStagger('.report-table-row', { translateX: [-15, 0], duration: 400, delay: 300 });
+    }
+  }, [loading, stats]);
 
   // Calculate client revenue ranking
   const clientRevenueMap = {};
@@ -119,7 +128,11 @@ const Reports = () => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="stage" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={60} />
                   <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#ffffff', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
+                    itemStyle={{ color: '#38bdf8', fontWeight: 700 }}
+                    labelStyle={{ color: '#ffffff', fontWeight: 700 }}
+                  />
                   <Bar dataKey="count" fill="#2563eb" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -132,7 +145,12 @@ const Reports = () => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#ffffff', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
+                    itemStyle={{ color: '#38bdf8', fontWeight: 700 }}
+                    labelStyle={{ color: '#ffffff', fontWeight: 700 }}
+                    formatter={(val) => [`₹${Number(val).toLocaleString('en-IN')}`, 'Revenue']}
+                  />
                   <Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={2.5} />
                 </LineChart>
               </ResponsiveContainer>
@@ -147,7 +165,11 @@ const Reports = () => {
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#ffffff', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
+                    itemStyle={{ color: '#38bdf8', fontWeight: 700 }}
+                    labelStyle={{ color: '#ffffff', fontWeight: 700 }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>

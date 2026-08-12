@@ -11,12 +11,14 @@ import EntityPage from './pages/EntityPage';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import AdminWorkspace from './pages/AdminWorkspace';
+import ScheduledDispatcher from './components/ScheduledDispatcher';
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
+          <ScheduledDispatcher />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

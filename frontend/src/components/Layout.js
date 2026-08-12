@@ -5,6 +5,7 @@ import Header from './Header';
 import CommandPalette from './CommandPalette';
 import Icon from './Icon';
 import navConfig from '../config/navConfig';
+import { animateStagedBloom, animate } from '../utils/animations';
 
 const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) => {
   const [collapsed, setCollapsed] = useState(true);
@@ -12,9 +13,11 @@ const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const location = useLocation();
   const searchInputRef = useRef(null);
+  const pageContentRef = useRef(null);
 
   const currentNav = navConfig.find((n) => location.pathname.startsWith(n.path));
   const pageTitle = currentNav ? currentNav.label : 'Dashboard';
+  const pageDescription = currentNav ? currentNav.description : '';
 
   const handleMenuToggle = () => {
     if (window.innerWidth <= 768) {
@@ -23,6 +26,13 @@ const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) 
       setCollapsed((prev) => !prev);
     }
   };
+
+  // Modern Staged Choreography Bloom on route transitions
+  useEffect(() => {
+    if (pageContentRef.current) {
+      animateStagedBloom(pageContentRef.current);
+    }
+  }, [location.pathname]);
 
   // Global Keyboard Shortcut (Ctrl+K or Cmd+K) to open Command Palette
   useEffect(() => {
@@ -35,6 +45,26 @@ const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const handleSearchFocus = (e) => {
+    try {
+      animate(e.target.parentElement, {
+        scale: [1, 1.015],
+        duration: 250,
+        ease: 'outQuad'
+      });
+    } catch (err) {}
+  };
+
+  const handleSearchBlur = (e) => {
+    try {
+      animate(e.target.parentElement, {
+        scale: [1.015, 1],
+        duration: 200,
+        ease: 'outQuad'
+      });
+    } catch (err) {}
+  };
 
   const isSearchActive = onSearchChange || searchValue !== undefined;
 
@@ -53,9 +83,10 @@ const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) 
           onAddClick={onAddClick}
           showAdd={showAdd}
         />
-        <div className="page-content">
+        <div className="page-content" ref={pageContentRef}>
           <div className="content-page-header">
             <h1 className="content-page-title">{pageTitle}</h1>
+            {pageDescription && <p className="content-page-subtitle">{pageDescription}</p>}
           </div>
 
           {/* PROFESSIONAL SEARCH BAR POSITIONED BELOW SECTION TITLE */}
@@ -69,6 +100,8 @@ const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) 
                   placeholder={`Search ${pageTitle.toLowerCase()}, records, leads, deals...`}
                   value={searchValue || ''}
                   onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
+                  onFocus={handleSearchFocus}
+                  onBlur={handleSearchBlur}
                 />
                 {searchValue && (
                   <button
@@ -96,3 +129,4 @@ const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) 
 };
 
 export default Layout;
+

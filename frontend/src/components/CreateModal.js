@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from './Icon';
+import { animateModalEnter } from '../utils/animations';
 
 /**
  * Standardized Create & Edit Modal Component
@@ -15,9 +16,12 @@ const CreateModal = ({
 }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
+  const modalRef = useRef(null);
+  const overlayRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
+      animateModalEnter(modalRef.current, overlayRef.current);
       setFormData({
         title: initialData.title || initialData.board_name || initialData.company_name || initialData.workspace_name || '',
         code: initialData.code || initialData.board_code || '',
@@ -98,8 +102,8 @@ const CreateModal = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '540px' }}>
+    <div className="modal-overlay" ref={overlayRef} onClick={onClose}>
+      <div className="modal-content glass-card" ref={modalRef} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '540px' }}>
         <div className="modal-header">
           <div className="wizard-header-title">
             <span className="drawer-entity-badge">{modalType.toUpperCase()} MODAL</span>
