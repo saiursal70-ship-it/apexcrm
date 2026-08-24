@@ -843,14 +843,18 @@ const AdminWorkspace = ({ embedded = false }) => {
                     onDragStart={(e) => handleDragStart(e, task.id)}
                     onDragEnd={handleDragEnd}
                   >
+                    {task.epic && (
+                      <span className="jira-card-epic-pill">{task.epic}</span>
+                    )}
+
                     <h4 className="jira-card-title">{task.title}</h4>
 
                     <div className="jira-card-bottom-row">
                       <div className="jira-card-left-tags">
                         {/* Task Type Badge */}
-                        <span className={`jira-type-icon type-${task.task_type}`} title={task.task_type}>
+                        <span className={`jira-type-icon type-${task.task_type}`} title={`Type: ${task.task_type}`}>
                           {task.task_type === 'story' && '🔖'}
-                          {task.task_type === 'bug' && '🟥'}
+                          {task.task_type === 'bug' && '🔴'}
                           {task.task_type === 'task' && '🟦'}
                         </span>
 
@@ -869,21 +873,38 @@ const AdminWorkspace = ({ embedded = false }) => {
                         )}
 
                         {/* Priority Arrow Badge */}
-                        <span className={`jira-priority-icon priority-${task.priority?.toLowerCase()}`}>
-                          {task.priority === 'High' && '⏫'}
+                        <span className={`jira-priority-icon priority-${task.priority?.toLowerCase()}`} title={`Priority: ${task.priority}`}>
+                          {task.priority === 'High' && '▲'}
                           {task.priority === 'Medium' && '='}
-                          {task.priority === 'Low' && '⏬'}
+                          {task.priority === 'Low' && '▼'}
                         </span>
 
                         {/* Story Points Badge */}
                         {task.points > 0 && (
-                          <span className="jira-points-badge">{task.points}</span>
+                          <span className="jira-points-badge" title={`${task.points} story points`}>
+                            {task.points}
+                          </span>
                         )}
                       </div>
 
-                      {/* Right Avatar */}
-                      <div className="jira-card-assignee" title={`Assigned to ${task.assignee_name}`}>
-                        <img src={task.assignee_avatar} alt={task.assignee_name} />
+                      {/* Right Circular Avatar */}
+                      <div className="jira-card-assignee" title={`Assigned to ${task.assignee_name || 'Team member'}`}>
+                        {task.assignee_avatar ? (
+                          <img
+                            src={task.assignee_avatar}
+                            alt={task.assignee_name}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <span
+                          className="jira-avatar-fallback-initials"
+                          style={{ display: task.assignee_avatar ? 'none' : 'flex' }}
+                        >
+                          {(task.assignee_name || 'AD').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </span>
                       </div>
                     </div>
                   </div>

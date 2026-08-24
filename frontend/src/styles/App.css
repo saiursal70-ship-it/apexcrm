@@ -7549,41 +7549,89 @@ body.dark-mode .admin-access-badge {
   min-height: 200px;
 }
 
-/* Jira Kanban Cards */
+/* Jira Kanban Cards - Professional Modern SaaS Layout */
 .jira-card {
   background: #ffffff;
-  border-radius: 6px;
-  padding: 12px;
-  box-shadow: 0 1px 3px rgba(9, 30, 66, 0.13), 0 0 1px rgba(9, 30, 66, 0.13);
+  border-radius: 10px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
   cursor: grab;
-  transition: box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+[data-theme="dark"] .jira-card,
+body.dark-mode .jira-card {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .jira-card:hover {
-  background: #fafbfc;
-  box-shadow: 0 4px 8px rgba(9, 30, 66, 0.15), 0 0 1px rgba(9, 30, 66, 0.13);
+  background: #ffffff;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] .jira-card:hover,
+body.dark-mode .jira-card:hover {
+  background: #243248;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 .jira-card.is-dragging-card {
-  opacity: 0.4;
-  transform: scale(0.98);
+  opacity: 0.45;
+  transform: scale(0.97);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+.jira-card-epic-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  padding: 1px 7px;
+  border-radius: 4px;
+  display: inline-block;
+  align-self: flex-start;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+[data-theme="dark"] .jira-card-epic-pill,
+body.dark-mode .jira-card-epic-pill {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #c4b5fd;
 }
 
 .jira-card-title {
   font-size: 0.88rem;
-  font-weight: 500;
-  color: #172b4d;
-  margin: 0 0 12px 0;
-  line-height: 1.4;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.45;
   word-break: break-word;
+  letter-spacing: -0.01em;
+}
+
+[data-theme="dark"] .jira-card-title,
+body.dark-mode .jira-card-title {
+  color: #f8fafc;
 }
 
 .jira-card-bottom-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 6px;
+  gap: 8px;
 }
 
 .jira-card-left-tags {
@@ -7591,40 +7639,79 @@ body.dark-mode .admin-access-badge {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  flex: 1;
 }
 
 .jira-type-icon {
-  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  font-size: 0.72rem;
   line-height: 1;
+}
+
+.jira-type-icon.type-story {
+  color: #10b981;
+}
+
+.jira-type-icon.type-bug {
+  color: #ef4444;
+}
+
+.jira-type-icon.type-task {
+  color: #3b82f6;
 }
 
 .jira-task-key {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  color: #5e6c84;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+[data-theme="dark"] .jira-task-key,
+body.dark-mode .jira-task-key {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
 }
 
 .jira-done-checkmark {
-  color: #16a34a;
+  color: #10b981;
   font-weight: 900;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 .jira-subtask-badge {
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: #64748b;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   background: #f1f5f9;
-  padding: 1px 5px;
+  padding: 2px 6px;
   border-radius: 4px;
 }
 
+[data-theme="dark"] .jira-subtask-badge,
+body.dark-mode .jira-subtask-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
 .jira-priority-icon {
-  font-size: 0.8rem;
-  line-height: 1;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
 }
 
 .jira-priority-icon.priority-high {
@@ -7633,7 +7720,6 @@ body.dark-mode .admin-access-badge {
 
 .jira-priority-icon.priority-medium {
   color: #d97706;
-  font-weight: bold;
 }
 
 .jira-priority-icon.priority-low {
@@ -7641,19 +7727,63 @@ body.dark-mode .admin-access-badge {
 }
 
 .jira-points-badge {
-  background: #dfe1e6;
-  color: #42526e;
-  font-size: 0.72rem;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.7rem;
   font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
+[data-theme="dark"] .jira-points-badge,
+body.dark-mode .jira-points-badge {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+}
+
+/* Strictly constrained circular assignee avatar */
+.jira-card-assignee,
+.jira-card-right-avatar {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  max-width: 24px !important;
+  max-height: 24px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: #cbd5e1;
+  margin-left: auto;
+}
+
+[data-theme="dark"] .jira-card-assignee,
+body.dark-mode .jira-card-assignee {
+  border-color: #334155;
+  background: #475569;
+}
+
+.jira-card-assignee img,
 .jira-card-right-avatar img {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 50% !important;
 }
 
 .jira-empty-col-placeholder {
