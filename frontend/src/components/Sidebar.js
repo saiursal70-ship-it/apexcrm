@@ -20,7 +20,6 @@ const Sidebar = ({ collapsed, mobileOpen, setMobileOpen }) => {
     {
       groupLabel: 'MANAGEMENT',
       items: [
-        { path: '/admin/workspace', label: 'Admin Board ⚡', icon: 'grid' },
         { path: '/tasks', label: 'Tasks', icon: 'check' },
         { path: '/appointments', label: 'Appointments', icon: 'calendar' },
         { path: '/invoices', label: 'Invoices', icon: 'invoice' },

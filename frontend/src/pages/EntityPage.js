@@ -4,10 +4,11 @@ import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import KanbanBoard from '../components/KanbanBoard';
 import EntityGraphView from '../components/EntityGraphView';
-import WhatsAppModal from '../components/WhatsAppModal';
+import OmnichannelMessageModal from '../components/OmnichannelMessageModal';
 import InvoicePrintModal from '../components/InvoicePrintModal';
 import QuotationPrintModal from '../components/QuotationPrintModal';
 import WorkflowConvertModal from '../components/WorkflowConvertModal';
+import LeadWebhookModal from '../components/LeadWebhookModal';
 import SkeletonLoader from '../components/SkeletonLoader';
 import SlideDrawer from '../components/SlideDrawer';
 import FormWizardModal from '../components/FormWizardModal';
@@ -42,9 +43,14 @@ const EntityPage = () => {
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({});
   const [isTrashMode, setIsTrashMode] = useState(false);
-  const [whatsappRecipient, setWhatsappRecipient] = useState(null);
+  const [messagingModalState, setMessagingModalState] = useState({
+    isOpen: false,
+    record: null,
+    defaultChannel: 'whatsapp'
+  });
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState(null);
   const [selectedQuotationForPrint, setSelectedQuotationForPrint] = useState(null);
+  const [showLeadWebhookModal, setShowLeadWebhookModal] = useState(false);
   const [drawerRecord, setDrawerRecord] = useState(null);
   const [drawerInitialEdit, setDrawerInitialEdit] = useState(false);
   const [workflowModalState, setWorkflowModalState] = useState({
@@ -56,6 +62,10 @@ const EntityPage = () => {
     if (entity === 'leads') return 'table';
     return localStorage.getItem(`crm_view_mode_${entity}`) || 'kanban';
   });
+
+  const openMessaging = (rec, channel = 'whatsapp') => {
+    setMessagingModalState({ isOpen: true, record: rec, defaultChannel: channel });
+  };
 
   const handleWorkflowAction = (type, record) => {
     setDrawerRecord(null);
@@ -187,6 +197,23 @@ const EntityPage = () => {
       await updateRecord(entity, targetRecord.id, {
         [statusField]: newStatus
       });
+
+      // Automated Stage Workflow Triggers
+      if (entity === 'deals' && newStatus === 'Closed Won') {
+        const confirmInvoice = window.confirm(
+          `🎉 Deal "${targetRecord.deal_name || targetRecord.account_name}" marked Closed Won! Would you like to generate the Tax Invoice for ₹${Number(targetRecord.value || 0).toLocaleString('en-IN')} now?`
+        );
+        if (confirmInvoice) {
+          handleWorkflowAction('deal_to_invoice', { ...targetRecord, stage: 'Closed Won' });
+        }
+      } else if (entity === 'deals' && newStatus === 'Proposal Sent') {
+        const confirmQuote = window.confirm(
+          `📄 Deal "${targetRecord.deal_name}" moved to Proposal Sent. Generate official Commercial Quotation now?`
+        );
+        if (confirmQuote) {
+          handleWorkflowAction('deal_to_quote', targetRecord);
+        }
+      }
     } catch (err) {
       console.error('Error updating status in DB:', err);
       fetchData();
@@ -222,10 +249,22 @@ const EntityPage = () => {
 
   const openAddForm = () => {
     const defaultForm = emptyFormFor(config.fields);
+    const today = new Date().toISOString().substring(0, 10);
+    const in15Days = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
+
     if (entity === 'quotations') {
       defaultForm.quotation_number = `QT-${Math.floor(1000 + Math.random() * 9000)}`;
-      defaultForm.quotation_date = new Date().toISOString().substring(0, 10);
+      defaultForm.quotation_date = today;
+      defaultForm.valid_until = in15Days;
       defaultForm.status = 'Draft';
+      defaultForm.terms = '50% Advance on project kickoff, 50% upon final milestone delivery and UAT sign-off. GST 18% extra as applicable.';
+    } else if (entity === 'invoices') {
+      defaultForm.invoice_number = `INV-${Math.floor(1000 + Math.random() * 9000)}`;
+      defaultForm.invoice_date = today;
+      defaultForm.due_date = in15Days;
+      defaultForm.payment_status = 'Pending';
+      defaultForm.payment_mode = 'Bank Transfer / NEFT';
+      defaultForm.paid_amount = 0;
     }
     setForm(defaultForm);
     setEditingId(null);
@@ -240,9 +279,50 @@ const EntityPage = () => {
   };
 
   const formatCell = (record, colName) => {
-    const val = record[colName];
+    let val = record[colName];
 
-    // CURRENCY FORMATTING
+    // REAL-TIME INVOICE DATA CALCULATION (Total Amount, Paid Amount, Balance Due)
+    if (entity === 'invoices') {
+      const totalAmount = Number(record.amount || 0);
+      const paymentStatus = String(record.payment_status || 'Pending').trim().toLowerCase();
+      
+      let paid = Number(record.paid_amount || 0);
+      if (paymentStatus === 'paid') {
+        paid = totalAmount;
+      } else if (paymentStatus === 'pending' || paymentStatus === 'unpaid') {
+        paid = 0;
+      }
+
+      const due = Math.max(0, totalAmount - paid);
+
+      if (colName === 'paid_amount') {
+        const isPaid = paymentStatus === 'paid';
+        return (
+          <span style={{ fontWeight: 700, color: isPaid ? '#10b981' : (paid > 0 ? '#3b82f6' : '#64748b') }}>
+            ₹{paid.toLocaleString('en-IN')}
+          </span>
+        );
+      }
+
+      if (colName === 'due_amount') {
+        const isPaid = paymentStatus === 'paid' || due === 0;
+        return (
+          <span style={{ fontWeight: 700, color: isPaid ? '#10b981' : (due > 0 ? '#ea580c' : '#64748b') }}>
+            {isPaid ? '₹0' : `₹${due.toLocaleString('en-IN')}`}
+          </span>
+        );
+      }
+
+      if (colName === 'amount') {
+        return (
+          <span style={{ fontWeight: 800, color: 'inherit' }}>
+            ₹{totalAmount.toLocaleString('en-IN')}
+          </span>
+        );
+      }
+    }
+
+    // GENERAL CURRENCY FORMATTING
     if (colName === 'value' || colName === 'price' || colName === 'budget' || colName === 'amount' || colName === 'paid_amount' || colName === 'due_amount' || colName === 'total_amount') {
       if (val === null || val === undefined || val === '') return '—';
       const num = Number(val);
@@ -360,6 +440,43 @@ const EntityPage = () => {
             <span>Export CSV</span>
           </button>
 
+          {/* LEADS SPECIFIC AUTOMATION SHORTCUTS */}
+          {entity === 'leads' && (
+            <>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setShowLeadWebhookModal(true)}
+                title="Public Inbound Lead Capture Webhook & Live Simulator"
+                style={{
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  borderColor: 'rgba(16, 185, 129, 0.35)',
+                  color: '#10b981',
+                  fontWeight: 600
+                }}
+              >
+                <Icon name="bolt" size={14} />
+                <span>Inbound Webhook</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => handleWorkflowAction('bulk_convert_leads', records)}
+                title="1-Click Convert All New Leads into Contacts, Accounts & Deals"
+                style={{
+                  background: 'rgba(99, 102, 241, 0.12)',
+                  borderColor: 'rgba(99, 102, 241, 0.35)',
+                  color: '#818cf8',
+                  fontWeight: 600
+                }}
+              >
+                <Icon name="refresh" size={14} />
+                <span>⚡ Mass Convert</span>
+              </button>
+            </>
+          )}
+
           {/* VIEW SWITCHER TOGGLE */}
           {isDualViewModule && (
             <div className="view-mode-toggle">
@@ -448,8 +565,10 @@ const EntityPage = () => {
           }}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          onWhatsApp={setWhatsappRecipient}
+          onWhatsApp={(rec) => openMessaging(rec, 'whatsapp')}
+          onEmail={(rec) => openMessaging(rec, 'email')}
           onPrintInvoice={(invoiceRec) => setSelectedInvoiceForPrint(invoiceRec)}
+          onPrintQuotation={(quoteRec) => setSelectedQuotationForPrint(quoteRec)}
           onWorkflowAction={handleWorkflowAction}
         />
       ) : (
@@ -546,12 +665,27 @@ const EntityPage = () => {
                           </button>
                         )}
 
-                        {r.phone && (
-                          <button className="btn-icon whatsapp action-tooltip-btn" onClick={() => setWhatsappRecipient(r)}>
-                            <Icon name="whatsapp" size={15} />
-                            <span className="action-hover-tag">WhatsApp</span>
-                          </button>
-                        )}
+                        {/* WhatsApp Message */}
+                        <button
+                          className="btn-icon whatsapp action-tooltip-btn"
+                          onClick={() => openMessaging(r, 'whatsapp')}
+                          title="WhatsApp Follow-up / Information Request"
+                        >
+                          <Icon name="whatsapp" size={15} />
+                          <span className="action-hover-tag">WhatsApp</span>
+                        </button>
+
+                        {/* Gmail / Corporate Email */}
+                        <button
+                          className="btn-icon action-tooltip-btn"
+                          style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+                          onClick={() => openMessaging(r, 'email')}
+                          title="Gmail / Email Follow-up"
+                        >
+                          <Icon name="email" size={15} />
+                          <span className="action-hover-tag">Gmail</span>
+                        </button>
+
                         {(r.invoice_number || entity === 'invoices') && (
                           <button className="btn-icon invoice-btn action-tooltip-btn" onClick={() => setSelectedInvoiceForPrint(r)}>
                             <Icon name="invoice" size={15} />
@@ -607,6 +741,7 @@ const EntityPage = () => {
         initialEditMode={drawerInitialEdit}
         onSave={async (id, updatedData) => {
           await updateRecord(entity, id, updatedData);
+          setDrawerRecord((prev) => (prev ? { ...prev, ...updatedData } : null));
           fetchData();
         }}
         onRefresh={fetchData}
@@ -615,15 +750,15 @@ const EntityPage = () => {
           handleDelete(id);
         }}
         onWhatsApp={(rec) => {
-          setDrawerRecord(null);
-          setWhatsappRecipient(rec);
+          openMessaging(rec, 'whatsapp');
+        }}
+        onEmail={(rec) => {
+          openMessaging(rec, 'email');
         }}
         onPrintInvoice={(rec) => {
-          setDrawerRecord(null);
           setSelectedInvoiceForPrint(rec);
         }}
         onPrintQuotation={(rec) => {
-          setDrawerRecord(null);
           setSelectedQuotationForPrint(rec);
         }}
         onWorkflowAction={(type, rec) => {
@@ -643,11 +778,14 @@ const EntityPage = () => {
         }}
       />
 
-      {/* WhatsApp Quick Message Modal */}
-      {whatsappRecipient && (
-        <WhatsAppModal
-          recipient={whatsappRecipient}
-          onClose={() => setWhatsappRecipient(null)}
+      {/* Omnichannel WhatsApp & Gmail Message Forwarding / Follow-up Modal */}
+      {messagingModalState.isOpen && (
+        <OmnichannelMessageModal
+          isOpen={messagingModalState.isOpen}
+          record={messagingModalState.record}
+          entity={entity}
+          defaultChannel={messagingModalState.defaultChannel}
+          onClose={() => setMessagingModalState({ isOpen: false, record: null, defaultChannel: 'whatsapp' })}
         />
       )}
 
@@ -656,6 +794,8 @@ const EntityPage = () => {
         <InvoicePrintModal
           invoice={selectedInvoiceForPrint}
           onClose={() => setSelectedInvoiceForPrint(null)}
+          onWhatsApp={(rec) => openMessaging(rec, 'whatsapp')}
+          onEmail={(rec) => openMessaging(rec, 'email')}
         />
       )}
 
@@ -664,8 +804,19 @@ const EntityPage = () => {
         <QuotationPrintModal
           quotation={selectedQuotationForPrint}
           onClose={() => setSelectedQuotationForPrint(null)}
+          onWhatsApp={(rec) => openMessaging(rec, 'whatsapp')}
+          onEmail={(rec) => openMessaging(rec, 'email')}
         />
       )}
+
+      {/* Public Inbound Lead Webhook & Test Simulator Modal */}
+      <LeadWebhookModal
+        isOpen={showLeadWebhookModal}
+        onClose={() => setShowLeadWebhookModal(false)}
+        onSuccess={() => {
+          fetchData();
+        }}
+      />
     </Layout>
   );
 };

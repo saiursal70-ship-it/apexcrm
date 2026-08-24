@@ -21,12 +21,14 @@ const SlideDrawer = ({
   onRefresh,
   onDelete,
   onWhatsApp,
+  onEmail,
   onPrintInvoice,
   onPrintQuotation,
   onWorkflowAction
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('overview');
   const [isEditing, setIsEditing] = useState(false);
+  const [activeRecord, setActiveRecord] = useState(record || {});
   const [editFormData, setEditFormData] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
@@ -38,11 +40,12 @@ const SlideDrawer = ({
   useEffect(() => {
     if (isOpen && record) {
       animateDrawerSpatialOpen(drawerRef.current, overlayRef.current);
+      setActiveRecord(record);
       setInternalNotes(record.notes || '');
       setSavedNotes(record.notes ? [record.notes] : []);
       setIsEditing(initialEditMode);
 
-      // Populate edit form
+      // Populate edit form with sanitized dates
       const initForm = {};
       fields.forEach((f) => {
         let val = record[f.name] ?? '';
@@ -89,10 +92,11 @@ const SlideDrawer = ({
     setIsSaving(true);
     try {
       if (onSave) {
-        await onSave(record.id, editFormData);
+        await onSave(activeRecord.id, editFormData);
       } else if (entity) {
-        await updateRecord(entity, record.id, editFormData);
+        await updateRecord(entity, activeRecord.id, editFormData);
       }
+      setActiveRecord((prev) => ({ ...prev, ...editFormData }));
       showToast('✅ Record updated successfully in database!');
       setIsEditing(false);
       if (onRefresh) onRefresh();
@@ -120,8 +124,7 @@ const SlideDrawer = ({
   };
 
   const lifecycle = getLifecycleStage();
-  const phoneVal = record.phone || record.contact_phone;
-  const statusVal = record.status || record.lead_status || record.stage || record.payment_status;
+  const statusVal = activeRecord.status || activeRecord.lead_status || activeRecord.stage || activeRecord.payment_status;
 
   const handleSaveNote = () => {
     if (!internalNotes.trim()) return;
@@ -451,7 +454,7 @@ const SlideDrawer = ({
                       ) : (
                         <input
                           type={field.type || 'text'}
-                          value={val}
+                          value={field.type === 'date' && val ? String(val).substring(0, 10) : val}
                           required={field.required}
                           onChange={(e) => setEditFormData({ ...editFormData, [field.name]: e.target.value })}
                           style={{
@@ -528,64 +531,99 @@ const SlideDrawer = ({
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {onPrintInvoice && (entity === 'invoices' || activeRecord.invoice_number) && (
+                    <button
+                      type="button"
+                      className="emoji-action-btn btn-print-action"
+                      onClick={() => onPrintInvoice(activeRecord)}
+                      aria-label="Print Tax Invoice"
+                    >
+                      <Icon name="printer" size={16} />
+                      <span className="emoji-hover-tooltip">🖨️ Print Invoice</span>
+                    </button>
+                  )}
+
+                  {onPrintQuotation && (entity === 'quotations' || activeRecord.quotation_number) && (
+                    <button
+                      type="button"
+                      className="emoji-action-btn btn-print-action"
+                      onClick={() => onPrintQuotation(activeRecord)}
+                      aria-label="Print Commercial Quotation"
+                    >
+                      <Icon name="printer" size={16} />
+                      <span className="emoji-hover-tooltip">🖨️ Print Quotation</span>
+                    </button>
+                  )}
+
                   {onWorkflowAction && entity === 'leads' && (
                     <button
                       type="button"
-                      className="btn btn-primary btn-sm"
-                      style={{ background: '#2563eb', borderColor: '#2563eb', padding: '6px 14px', fontSize: '0.82rem', fontWeight: 600 }}
-                      onClick={() => onWorkflowAction('convert_lead', record)}
+                      className="emoji-action-btn btn-bolt"
+                      onClick={() => onWorkflowAction('convert_lead', activeRecord)}
+                      aria-label="Convert Lead"
                     >
-                      <Icon name="bolt" size={14} />
-                      <span>Convert Lead</span>
+                      <Icon name="bolt" size={16} />
+                      <span className="emoji-hover-tooltip">⚡ Convert Lead</span>
                     </button>
                   )}
 
                   {onWorkflowAction && entity === 'deals' && (
                     <button
                       type="button"
-                      className="btn btn-primary btn-sm"
-                      style={{ background: '#059669', borderColor: '#059669', padding: '6px 14px', fontSize: '0.82rem', fontWeight: 600 }}
-                      onClick={() => onWorkflowAction('deal_to_quote', record)}
+                      className="emoji-action-btn btn-quote-action"
+                      onClick={() => onWorkflowAction('deal_to_quote', activeRecord)}
+                      aria-label="Create Quotation"
                     >
-                      <Icon name="document" size={14} />
-                      <span>Create Quote</span>
+                      <Icon name="document" size={16} />
+                      <span className="emoji-hover-tooltip">📄 Create Quote</span>
                     </button>
                   )}
 
                   {onWorkflowAction && entity === 'quotations' && (
                     <button
                       type="button"
-                      className="btn btn-primary btn-sm"
-                      style={{ background: '#d97706', borderColor: '#d97706', padding: '6px 14px', fontSize: '0.82rem', fontWeight: 600 }}
-                      onClick={() => onWorkflowAction('quote_to_invoice', record)}
+                      className="emoji-action-btn btn-invoice-action"
+                      onClick={() => onWorkflowAction('quote_to_invoice', activeRecord)}
+                      aria-label="Issue Tax Invoice"
                     >
-                      <Icon name="invoice" size={14} />
-                      <span>Issue Invoice</span>
+                      <Icon name="invoice" size={16} />
+                      <span className="emoji-hover-tooltip">🧾 Issue Invoice</span>
                     </button>
                   )}
 
                   {onWorkflowAction && entity === 'invoices' && (
                     <button
                       type="button"
-                      className="btn btn-primary btn-sm"
-                      style={{ background: '#7c3aed', borderColor: '#7c3aed', padding: '6px 14px', fontSize: '0.82rem', fontWeight: 600 }}
-                      onClick={() => onWorkflowAction('invoice_to_project', record)}
+                      className="emoji-action-btn btn-project-action"
+                      onClick={() => onWorkflowAction('invoice_to_project', activeRecord)}
+                      aria-label="Launch Project"
                     >
-                      <Icon name="grid" size={14} />
-                      <span>Launch Project</span>
+                      <Icon name="grid" size={16} />
+                      <span className="emoji-hover-tooltip">🚀 Launch Project</span>
                     </button>
                   )}
 
-                  {phoneVal && (
+                  {onWhatsApp && (
                     <button
                       type="button"
-                      className="btn btn-whatsapp btn-sm"
-                      style={{ padding: '6px 12px', fontSize: '0.82rem' }}
-                      onClick={() => onWhatsApp(record)}
-                      title="WhatsApp Message"
+                      className="emoji-action-btn btn-whatsapp-action"
+                      onClick={() => onWhatsApp(activeRecord)}
+                      aria-label="WhatsApp Follow-up"
                     >
-                      <Icon name="whatsapp" size={14} />
-                      <span>Chat</span>
+                      <Icon name="whatsapp" size={16} />
+                      <span className="emoji-hover-tooltip">💬 WhatsApp</span>
+                    </button>
+                  )}
+
+                  {onEmail && (
+                    <button
+                      type="button"
+                      className="emoji-action-btn btn-email-action"
+                      onClick={() => onEmail(activeRecord)}
+                      aria-label="Gmail / Email Follow-up"
+                    >
+                      <Icon name="email" size={16} />
+                      <span className="emoji-hover-tooltip">✉️ Gmail / Email</span>
                     </button>
                   )}
                 </div>
@@ -599,7 +637,18 @@ const SlideDrawer = ({
                   gap: 14
                 }}>
                   {fields.map((field) => {
-                    const val = record[field.name];
+                    const val = activeRecord[field.name];
+                    const isDateField = field.type === 'date' || field.name.includes('date') || field.name.includes('until');
+                    const isCurrencyField = field.name.includes('amount') || field.name.includes('value') || field.name.includes('total') || field.name.includes('price') || field.name.includes('budget');
+                    const isStatusField = field.type === 'select' && (field.name === 'status' || field.name === 'lead_status' || field.name === 'payment_status' || field.name === 'stage');
+
+                    let displayVal = val;
+                    if (val !== undefined && val !== null && val !== '') {
+                      if (isDateField) {
+                        displayVal = String(val).substring(0, 10);
+                      }
+                    }
+
                     return (
                       <div
                         key={field.name}
@@ -629,7 +678,7 @@ const SlideDrawer = ({
                           wordBreak: 'break-word'
                         }}>
                           {val !== undefined && val !== null && val !== '' ? (
-                            field.type === 'select' && (field.name === 'status' || field.name === 'lead_status') ? (
+                            isStatusField ? (
                               <span className={`badge-pill status-${String(val).toLowerCase().replace(/\s+/g, '-')}`} style={{
                                 fontSize: '0.75rem',
                                 fontWeight: 700,
@@ -641,12 +690,12 @@ const SlideDrawer = ({
                               }}>
                                 {String(val)}
                               </span>
-                            ) : field.name.includes('amount') || field.name.includes('value') || field.name.includes('total') || field.name.includes('price') ? (
+                            ) : isCurrencyField ? (
                               <strong style={{ color: '#059669', fontSize: '1.05rem' }}>
-                                ₹{Number(val).toLocaleString('en-IN')}
+                                ₹{Number(val || 0).toLocaleString('en-IN')}
                               </strong>
                             ) : (
-                              String(val)
+                              displayVal
                             )
                           ) : (
                             <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '0.84rem' }}>

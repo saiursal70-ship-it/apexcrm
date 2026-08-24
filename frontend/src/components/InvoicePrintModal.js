@@ -28,7 +28,19 @@ const numberToWords = (num) => {
   return (words ? words.trim() : 'Zero') + ' Rupees Only';
 };
 
-const InvoicePrintModal = ({ invoice, onClose }) => {
+const formatDateSafe = (val, fallback = '—') => {
+  if (!val) return fallback;
+  try {
+    const s = String(val).substring(0, 10);
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return s;
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch (e) {
+    return String(val).substring(0, 10) || fallback;
+  }
+};
+
+const InvoicePrintModal = ({ invoice, onClose, onWhatsApp, onEmail }) => {
   const modalRef = useRef(null);
   const overlayRef = useRef(null);
 
@@ -55,10 +67,10 @@ const InvoicePrintModal = ({ invoice, onClose }) => {
   };
 
   const totalAmount = Number(invoice.amount) || 0;
-  const paidAmount = invoice.paid_amount !== undefined && invoice.paid_amount !== null
-    ? Number(invoice.paid_amount)
-    : (String(invoice.payment_status).toLowerCase() === 'paid' ? totalAmount : 0);
-
+  const isPaidStatus = String(invoice.payment_status || '').toLowerCase() === 'paid';
+  const paidAmount = isPaidStatus
+    ? (Number(invoice.paid_amount) > 0 ? Number(invoice.paid_amount) : totalAmount)
+    : (Number(invoice.paid_amount) || 0);
   const dueAmount = Math.max(0, totalAmount - paidAmount);
 
   // Compute subtotal and GST breakdown (assuming 18% GST included)
@@ -76,9 +88,31 @@ const InvoicePrintModal = ({ invoice, onClose }) => {
             <Icon name="invoice" size={18} />
             <span>Tax Invoice #{invoice.invoice_number}</span>
           </div>
-          <div className="action-bar-buttons">
+          <div className="action-bar-buttons" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {onWhatsApp && (
+              <button
+                type="button"
+                className="emoji-action-btn btn-whatsapp-action"
+                onClick={() => onWhatsApp(invoice)}
+                aria-label="WhatsApp Reminder"
+              >
+                <Icon name="whatsapp" size={16} />
+                <span className="emoji-hover-tooltip">💬 WhatsApp Reminder</span>
+              </button>
+            )}
+            {onEmail && (
+              <button
+                type="button"
+                className="emoji-action-btn btn-email-action"
+                onClick={() => onEmail(invoice)}
+                aria-label="Send via Gmail"
+              >
+                <Icon name="email" size={16} />
+                <span className="emoji-hover-tooltip">✉️ Send via Gmail</span>
+              </button>
+            )}
             <button type="button" className="btn btn-primary print-trigger-btn" onClick={handlePrint}>
-              <Icon name="printer" size={16} /> Print / Save as PDF
+              <Icon name="printer" size={16} /> Print / Save PDF
             </button>
             <button type="button" className="btn btn-outline modal-close-btn" onClick={onClose}>
               <Icon name="close" size={16} /> Close
@@ -123,11 +157,11 @@ const InvoicePrintModal = ({ invoice, onClose }) => {
               </div>
               <div className="meta-row">
                 <span className="meta-label">Invoice Date:</span>
-                <span className="meta-value">{invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-IN') : 'Today'}</span>
+                <span className="meta-value">{formatDateSafe(invoice.invoice_date, 'Today')}</span>
               </div>
               <div className="meta-row">
                 <span className="meta-label">Due Date:</span>
-                <span className="meta-value">{invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-IN') : 'Net 15 Days'}</span>
+                <span className="meta-value">{formatDateSafe(invoice.due_date, 'Net 15 Days')}</span>
               </div>
             </div>
           </div>

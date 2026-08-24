@@ -106,7 +106,11 @@ function createCrudRouter(tableName, allowedFields) {
 
             const columns = fields.map(f => `\`${f}\``).join(', ');
             const placeholders = fields.map(() => '?').join(', ');
-            const values = fields.map(f => req.body[f]);
+            const values = fields.map(f => {
+                const val = req.body[f];
+                if (val === '' || val === undefined) return null;
+                return val;
+            });
 
             const [result] = await db.query(
                 `INSERT INTO \`${tableName}\` (${columns}) VALUES (${placeholders})`,
@@ -118,6 +122,7 @@ function createCrudRouter(tableName, allowedFields) {
 
             res.status(201).json({ id: newId, message: 'Record created successfully' });
         } catch (err) {
+            console.error(`❌ Error creating ${tableName}:`, err);
             res.status(500).json({ error: err.message });
         }
     });
@@ -129,7 +134,11 @@ function createCrudRouter(tableName, allowedFields) {
             if (fields.length === 0) return res.status(400).json({ error: 'No valid fields provided' });
 
             const setClause = fields.map(f => `\`${f}\` = ?`).join(', ');
-            const values = fields.map(f => req.body[f]);
+            const values = fields.map(f => {
+                const val = req.body[f];
+                if (val === '' || val === undefined) return null;
+                return val;
+            });
             values.push(req.params.id);
 
             const [result] = await db.query(
@@ -143,6 +152,7 @@ function createCrudRouter(tableName, allowedFields) {
 
             res.json({ message: 'Record updated successfully' });
         } catch (err) {
+            console.error(`❌ Error updating ${tableName}:`, err);
             res.status(500).json({ error: err.message });
         }
     });

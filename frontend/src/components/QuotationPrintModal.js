@@ -29,7 +29,19 @@ const numberToWords = (num) => {
   return (words ? words.trim() : 'Zero') + ' Rupees Only';
 };
 
-const QuotationPrintModal = ({ quotation, onClose }) => {
+const formatDateSafe = (val, fallback = '—') => {
+  if (!val) return fallback;
+  try {
+    const s = String(val).substring(0, 10);
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return s;
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch (e) {
+    return String(val).substring(0, 10) || fallback;
+  }
+};
+
+const QuotationPrintModal = ({ quotation, onClose, onWhatsApp, onEmail }) => {
   const [converting, setConverting] = useState(false);
   const modalRef = useRef(null);
   const overlayRef = useRef(null);
@@ -86,7 +98,29 @@ const QuotationPrintModal = ({ quotation, onClose }) => {
             <Icon name="quotation" size={18} />
             <span>Commercial Quotation #{quotation.quotation_number || quotation.id}</span>
           </div>
-          <div className="action-bar-buttons">
+          <div className="action-bar-buttons" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {onWhatsApp && (
+              <button
+                type="button"
+                className="emoji-action-btn btn-whatsapp-action"
+                onClick={() => onWhatsApp(quotation)}
+                aria-label="WhatsApp Follow-up"
+              >
+                <Icon name="whatsapp" size={16} />
+                <span className="emoji-hover-tooltip">💬 WhatsApp Follow-up</span>
+              </button>
+            )}
+            {onEmail && (
+              <button
+                type="button"
+                className="emoji-action-btn btn-email-action"
+                onClick={() => onEmail(quotation)}
+                aria-label="Gmail / Email Follow-up"
+              >
+                <Icon name="email" size={16} />
+                <span className="emoji-hover-tooltip">✉️ Gmail / Email</span>
+              </button>
+            )}
             <button
               type="button"
               className="btn btn-success print-trigger-btn"
@@ -145,11 +179,11 @@ const QuotationPrintModal = ({ quotation, onClose }) => {
               </div>
               <div className="meta-row">
                 <span className="meta-label">Quotation Date:</span>
-                <span className="meta-value">{quotation.quotation_date ? new Date(quotation.quotation_date).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')}</span>
+                <span className="meta-value">{formatDateSafe(quotation.quotation_date, 'Today')}</span>
               </div>
               <div className="meta-row">
                 <span className="meta-label">Valid Until:</span>
-                <span className="meta-value">{quotation.valid_until ? new Date(quotation.valid_until).toLocaleDateString('en-IN') : '15 Days from Date'}</span>
+                <span className="meta-value">{formatDateSafe(quotation.valid_until, '15 Days from Date')}</span>
               </div>
             </div>
           </div>

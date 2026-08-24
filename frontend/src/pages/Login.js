@@ -1,8 +1,4 @@
 import React from 'react';
-import AuthCard from '../components/AuthCard';
-
-const Login = () => {
-  return <AuthCard initialMode="signin" />;
-};
+import Login from './Login.jsx';
 
 export default Login;

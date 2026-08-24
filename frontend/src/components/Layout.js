@@ -8,7 +8,7 @@ import navConfig from '../config/navConfig';
 import { animateStagedBloom, animate } from '../utils/animations';
 
 const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) => {
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(window.innerWidth <= 1024);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const location = useLocation();

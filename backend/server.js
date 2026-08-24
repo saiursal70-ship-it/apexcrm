@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
@@ -17,6 +18,10 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/workflow', workflowRoutes);
+app.post('/api/leads/webhook', (req, res, next) => {
+    req.url = '/lead-webhook';
+    workflowRoutes(req, res, next);
+});
 app.use('/api/v1/kanban', kanbanRoutes);
 app.use('/api/kanban', kanbanRoutes);
 app.use('/api', entityRoutes);
@@ -24,6 +29,14 @@ app.use('/api', entityRoutes);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'CRM API Server is running' });
+});
+
+// Serve frontend static assets
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+        res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+    }
 });
 
 const PORT = process.env.PORT || 5001;

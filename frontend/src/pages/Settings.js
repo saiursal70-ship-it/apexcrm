@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { changeUserPassword, updateUserProfile } from '../api/api';
 import { animateStagger } from '../utils/animations';
+import AdminWorkspace from './AdminWorkspace';
 
 const DEFAULT_ROLES = [
   { id: 'admin', role: 'System Administrator', department: 'Executive Management', designation: 'Chief Administrator', level: 'Level 5 (Full Access)', userCount: 3 },
@@ -1223,41 +1224,31 @@ const Settings = () => {
 
           {/* TAB 9: ADMIN WORKSPACE */}
           {activeTab === 'admin-workspace' && (
-            <div className="settings-section">
-              <div className="section-header">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="settings-section settings-section-admin-workspace">
+              <div className="section-header" style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
                     <h2>Admin Workspace &amp; Sprint Board</h2>
                     <p>Agile project workspace for administrative users only. Manage active sprints, drag-and-drop task cards, Epics, and team assignments.</p>
                   </div>
-                  <span className="admin-status-badge">⚡ ADMIN ACCESS GRANTED</span>
-                </div>
-              </div>
-
-              <div className="admin-workspace-access-card">
-                <div className="card-banner-icon">⚡</div>
-                <div className="card-info">
-                  <h3>Beyond Gravity - Agile Sprint Board</h3>
-                  <p>Access the full Jira-style Sprint Board featuring TO DO, IN PROGRESS, IN REVIEW, and DONE columns with real-time issue updates.</p>
-                  
-                  <div className="sprint-stats-pills">
-                    <span className="pill todo">12 TO DO</span>
-                    <span className="pill progress">4 IN PROGRESS</span>
-                    <span className="pill review">4 IN REVIEW</span>
-                    <span className="pill done">4 DONE</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="admin-status-badge">⚡ ADMIN ACCESS GRANTED</span>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ fontSize: '0.82rem', padding: '6px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      onClick={() => navigate('/admin/workspace')}
+                      title="Open Fullscreen Workspace"
+                    >
+                      <Icon name="activity" size={14} />
+                      <span>Fullscreen View</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="card-action">
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-launch-admin"
-                    onClick={() => navigate('/admin/workspace')}
-                  >
-                    ⚡ Open Admin Sprint Board Workspace
-                  </button>
-                </div>
               </div>
+
+              {/* Render the full interactive Sprint Board directly inside Settings */}
+              <AdminWorkspace embedded={true} />
             </div>
           )}
         </div>

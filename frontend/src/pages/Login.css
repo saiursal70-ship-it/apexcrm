@@ -1,0 +1,1300 @@
+/* ==========================================================================
+   ANIMATED APEX CRM LOGIN & AUTH SYSTEM
+   ========================================================================== */
+
+/* 1. Main Fullscreen Universe */
+.auth-universe {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  background: linear-gradient(135deg, #090d16 0%, #0f172a 50%, #16243b 100%);
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
+}
+
+.auth-universe.light-theme {
+  background: linear-gradient(135deg, #f0fdfa 0%, #f1f5f9 45%, #e2e8f0 100%);
+}
+
+/* 2. Floating Top Theme Switcher */
+.auth-top-bar {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: fadeIn 0.8s ease backwards;
+}
+
+.auth-theme-switch-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  color: #f8fafc;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-theme-switch-btn:hover {
+  background: rgba(30, 41, 59, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.light-theme .auth-theme-switch-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #cbd5e1;
+  color: #0f172a;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.light-theme .auth-theme-switch-btn:hover {
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+/* 3. Ambient Glowing Blobs & Animated Waves */
+.auth-glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(110px);
+  pointer-events: none;
+  opacity: 0.5;
+  will-change: transform;
+}
+
+.orb-primary {
+  top: -12%;
+  left: -8%;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, #0284c7 0%, rgba(2, 132, 199, 0.4) 60%, rgba(3, 105, 161, 0) 80%);
+  animation: orbFloat1 16s ease-in-out infinite alternate;
+}
+
+.orb-secondary {
+  bottom: -15%;
+  right: -10%;
+  width: 560px;
+  height: 560px;
+  background: radial-gradient(circle, #0d9488 0%, rgba(13, 148, 136, 0.4) 60%, rgba(15, 118, 110, 0) 80%);
+  animation: orbFloat2 18s ease-in-out infinite alternate;
+}
+
+.orb-accent {
+  top: 35%;
+  left: 60%;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, #6366f1 0%, rgba(99, 102, 241, 0.25) 50%, rgba(99, 102, 241, 0) 75%);
+  opacity: 0.35;
+  animation: orbFloat3 20s ease-in-out infinite alternate;
+}
+
+.light-theme .orb-primary {
+  opacity: 0.28;
+  background: radial-gradient(circle, #38bdf8 0%, rgba(56, 189, 248, 0.15) 70%);
+}
+
+.light-theme .orb-secondary {
+  opacity: 0.28;
+  background: radial-gradient(circle, #2dd4bf 0%, rgba(45, 212, 191, 0.15) 70%);
+}
+
+.light-theme .orb-accent {
+  opacity: 0.2;
+  background: radial-gradient(circle, #818cf8 0%, rgba(129, 140, 248, 0.1) 70%);
+}
+
+@keyframes orbFloat1 {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate(45px, 30px) scale(1.08) rotate(15deg); }
+  100% { transform: translate(25px, 60px) scale(1.15) rotate(30deg); }
+}
+
+@keyframes orbFloat2 {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate(-40px, -25px) scale(1.1) rotate(-15deg); }
+  100% { transform: translate(-20px, -50px) scale(1.14) rotate(-30deg); }
+}
+
+@keyframes orbFloat3 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, 30px) scale(0.92); }
+  100% { transform: translate(30px, -20px) scale(1.05); }
+}
+
+/* 4. Animated Background Waves & Floating Particles */
+.auth-background-canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.auth-waves-svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  opacity: 0.08;
+  pointer-events: none;
+  animation: wavesDrift 28s linear infinite;
+}
+
+.light-theme .auth-waves-svg {
+  opacity: 0.04;
+}
+
+@keyframes wavesDrift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.auth-particles-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.auth-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, rgba(20, 184, 166, 0.3) 100%);
+  filter: blur(0.5px);
+  animation: floatParticle linear infinite;
+  will-change: transform, opacity;
+}
+
+.light-theme .auth-particle {
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.6) 0%, rgba(14, 165, 233, 0.2) 100%);
+}
+
+@keyframes floatParticle {
+  0% {
+    transform: translateY(100vh) translateX(0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: var(--particle-opacity, 0.6);
+  }
+  85% {
+    opacity: var(--particle-opacity, 0.6);
+  }
+  100% {
+    transform: translateY(-50px) translateX(var(--drift-x, 20px)) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* 5. Main Card Container & Outer Glow Pulse */
+.auth-card-aura-wrap {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: cardEntrance 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.auth-card-aura {
+  position: absolute;
+  inset: -12px;
+  border-radius: 32px;
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.2) 0%, rgba(2, 132, 199, 0.12) 50%, transparent 75%);
+  filter: blur(20px);
+  pointer-events: none;
+  animation: auraPulse 6s ease-in-out infinite alternate;
+  z-index: -1;
+}
+
+@keyframes auraPulse {
+  0% { transform: scale(0.98); opacity: 0.45; }
+  100% { transform: scale(1.03); opacity: 0.85; }
+}
+
+@keyframes cardEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Gentle Horizontal Shake Animation for Login Error */
+.auth-sliding-box.shake-card {
+  animation: gentleShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes gentleShake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-7px); }
+  30% { transform: translateX(6px); }
+  45% { transform: translateX(-5px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+
+/* 6. Dual-Sliding Main Box */
+.auth-sliding-box {
+  background-color: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  width: 900px;
+  max-width: 100%;
+  min-height: 590px;
+  transition: all 0.4s ease;
+}
+
+.dark-theme .auth-sliding-box {
+  background-color: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 70px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(13, 148, 136, 0.18);
+}
+
+/* 7. Form Container Panels (50% Split) */
+.form-panel-container {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  transition: all 0.65s cubic-bezier(0.77, 0, 0.175, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 48px;
+  box-sizing: border-box;
+}
+
+.sign-in-container {
+  left: 0;
+  width: 50%;
+  z-index: 2;
+  opacity: 1;
+}
+
+.sign-up-container {
+  left: 0;
+  width: 50%;
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Sliding active states */
+.auth-sliding-box.right-panel-active .sign-in-container {
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.auth-sliding-box.right-panel-active .sign-up-container {
+  transform: translateX(100%);
+  opacity: 1;
+  z-index: 5;
+  pointer-events: auto;
+  animation: showSignUpPanel 0.65s cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+@keyframes showSignUpPanel {
+  0%, 49.99% {
+    opacity: 0;
+    z-index: 1;
+  }
+  50%, 100% {
+    opacity: 1;
+    z-index: 5;
+  }
+}
+
+/* 8. Core Form Styling & Sequential Staggered Entrance */
+.auth-core-form {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-seq-1 { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards 0.12s; }
+.auth-seq-2 { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards 0.22s; }
+.auth-seq-3 { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards 0.32s; }
+.auth-seq-4 { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards 0.42s; }
+.auth-seq-5 { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards 0.52s; }
+.auth-seq-6 { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards 0.62s; }
+.auth-seq-7 { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards 0.72s; }
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.auth-mobile-brand {
+  display: none;
+  margin-bottom: 12px;
+  justify-content: center;
+}
+
+.form-head-block {
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.form-head-block h2 {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.025em;
+}
+
+.dark-theme .form-head-block h2 {
+  color: #f8fafc;
+}
+
+.form-head-block p {
+  font-size: 0.86rem;
+  color: #475569;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.dark-theme .form-head-block p {
+  color: #94a3b8;
+}
+
+/* Error Banner with Smooth Fade In */
+.auth-alert-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  animation: alertSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.dark-theme .auth-alert-message {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.auth-notice-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  animation: alertSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.dark-theme .auth-notice-message {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+
+@keyframes alertSlideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 9. Interactive Input Groups & Glowing Focus Effects */
+.auth-field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.auth-field-wrap label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1e293b;
+  transition: color 0.2s ease;
+}
+
+.dark-theme .auth-field-wrap label {
+  color: #cbd5e1;
+}
+
+.auth-field-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.auth-field-input-box .field-icon {
+  position: absolute;
+  left: 13px;
+  color: #64748b;
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-field-input-box input {
+  width: 100%;
+  padding: 10.5px 40px 10.5px 40px !important;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.89rem;
+  color: #0f172a !important;
+  outline: none;
+  transition: border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.dark-theme .auth-field-input-box input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc !important;
+}
+
+.auth-field-input-box input:focus {
+  border-color: #0d9488;
+  background: #ffffff;
+  box-shadow: 0 0 0 3.5px rgba(13, 148, 136, 0.2), 0 0 16px rgba(13, 148, 136, 0.12);
+}
+
+.dark-theme .auth-field-input-box input:focus {
+  border-color: #14b8a6;
+  background: #0f172a;
+  box-shadow: 0 0 0 3.5px rgba(20, 184, 166, 0.25), 0 0 18px rgba(20, 184, 166, 0.18);
+}
+
+/* Icon Highlight and Micro-Scale on Focus */
+.auth-field-input-box:focus-within .field-icon {
+  color: #0d9488;
+  transform: scale(1.08);
+}
+
+.dark-theme .auth-field-input-box:focus-within .field-icon {
+  color: #14b8a6;
+  transform: scale(1.08);
+}
+
+/* Password Eye Toggle with Rotation Transition */
+.field-toggle-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.2s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.field-toggle-btn:hover {
+  color: #0d9488;
+  transform: scale(1.12);
+}
+
+.dark-theme .field-toggle-btn:hover {
+  color: #14b8a6;
+}
+
+.field-toggle-btn .eye-icon-spin {
+  display: inline-flex;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+}
+
+.field-toggle-btn.toggled .eye-icon-spin {
+  transform: rotate(180deg);
+}
+
+/* 10. Checkbox and Text Links */
+.auth-options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.83rem;
+  margin-top: 2px;
+}
+
+.auth-custom-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #334155;
+  font-weight: 500;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.dark-theme .auth-custom-checkbox {
+  color: #cbd5e1;
+}
+
+.auth-custom-checkbox input {
+  accent-color: #0d9488;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.auth-text-link {
+  background: none;
+  border: none;
+  color: #0d9488;
+  font-weight: 600;
+  font-size: 0.83rem;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.auth-text-link:hover {
+  color: #0f766e;
+  text-decoration: underline;
+  transform: translateX(1px);
+}
+
+.dark-theme .auth-text-link {
+  color: #2dd4bf;
+}
+
+.dark-theme .auth-text-link:hover {
+  color: #5eead4;
+}
+
+/* 11. Primary Action Submit Button with Lift, Glow & States */
+.auth-submit-btn {
+  position: relative;
+  width: 100%;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 11px;
+  font-size: 0.93rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.35);
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.auth-submit-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: 0.5s ease;
+}
+
+.auth-submit-btn:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(13, 148, 136, 0.5);
+}
+
+.auth-submit-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.3);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+/* Success Button Animation State */
+.auth-submit-btn.btn-success-state {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 6px 22px rgba(16, 185, 129, 0.45) !important;
+  animation: successPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes successPop {
+  0% { transform: scale(0.96); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+.btn-spinner-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.auth-spin-ring {
+  width: 17px;
+  height: 17px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.auth-success-check-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: checkPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes checkPopIn {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* Quick Demo Conversion Buttons */
+.auth-demo-convert-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(241, 245, 249, 0.6);
+  border: 1px dashed #cbd5e1;
+  padding: 8px 12px;
+  border-radius: 12px;
+  margin-top: 2px;
+}
+
+.dark-theme .auth-demo-convert-row {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: #334155;
+}
+
+.demo-convert-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.2px;
+}
+
+.dark-theme .demo-convert-label {
+  color: #94a3b8;
+}
+
+.demo-convert-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.demo-convert-chip {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dark-theme .demo-convert-chip {
+  background: #1e293b;
+  border-color: #475569;
+  color: #f8fafc;
+}
+
+.demo-convert-chip:hover {
+  background: #0d9488;
+  border-color: #0d9488;
+  color: #ffffff;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+}
+
+.dark-theme .demo-convert-chip:hover {
+  background: #14b8a6;
+  border-color: #14b8a6;
+  color: #0f172a;
+}
+
+/* Mobile Switch Footer */
+.auth-mobile-switch {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #475569;
+  margin-top: 8px;
+}
+
+.dark-theme .auth-mobile-switch {
+  color: #94a3b8;
+}
+
+.auth-switch-text-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0d9488;
+  transition: color 0.2s ease;
+}
+
+.dark-theme .auth-switch-text-btn {
+  color: #2dd4bf;
+}
+
+.auth-switch-text-btn:hover {
+  color: #0f766e;
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   12. DUAL SLIDING HERO OVERLAY (Animated Dark Teal/Emerald Side Panel)
+   ========================================================================== */
+.overlay-outer-frame {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  transition: transform 0.72s cubic-bezier(0.77, 0, 0.175, 1);
+  z-index: 100;
+}
+
+.auth-sliding-box.right-panel-active .overlay-outer-frame {
+  transform: translateX(-100%);
+}
+
+/* Moving Multi-Layer Gradient Canvas for Green Panel */
+.overlay-sliding-track {
+  background: linear-gradient(135deg, #022c37 0%, #044352 35%, #064e3b 70%, #011d24 100%);
+  background-size: 200% 200%;
+  animation: panelGradientFlow 14s ease infinite alternate;
+  color: #ffffff;
+  position: relative;
+  left: -100%;
+  height: 100%;
+  width: 200%;
+  transform: translateX(0);
+  transition: transform 0.72s cubic-bezier(0.77, 0, 0.175, 1);
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.auth-sliding-box.right-panel-active .overlay-sliding-track {
+  transform: translateX(50%);
+}
+
+@keyframes panelGradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Ambient Glowing Fluid Blobs inside the Green Panel */
+.panel-ambient-decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.panel-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(50px);
+  pointer-events: none;
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.panel-blob-1 {
+  top: -10%;
+  right: 15%;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, #06b6d4 0%, rgba(6, 182, 212, 0.3) 60%, transparent 80%);
+  animation: panelBlobMove1 12s ease-in-out infinite alternate;
+}
+
+.panel-blob-2 {
+  bottom: -15%;
+  left: 20%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, #10b981 0%, rgba(16, 185, 129, 0.35) 60%, transparent 80%);
+  animation: panelBlobMove2 15s ease-in-out infinite alternate;
+}
+
+.panel-blob-3 {
+  top: 40%;
+  left: 55%;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, #0d9488 0%, rgba(13, 148, 136, 0.3) 50%, transparent 75%);
+  animation: panelBlobMove3 18s ease-in-out infinite alternate;
+}
+
+@keyframes panelBlobMove1 {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate(-35px, 45px) scale(1.15) rotate(20deg); }
+  100% { transform: translate(25px, 20px) scale(0.9) rotate(-15deg); }
+}
+
+@keyframes panelBlobMove2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(45px, -35px) scale(1.18); }
+  100% { transform: translate(-20px, -20px) scale(0.95); }
+}
+
+@keyframes panelBlobMove3 {
+  0% { transform: translate(0, 0) scale(0.95); }
+  50% { transform: translate(-30px, -30px) scale(1.2); }
+  100% { transform: translate(30px, 30px) scale(1); }
+}
+
+/* Shimmering Diagonal Light Ray passing across the Green Panel */
+.panel-light-sweep {
+  position: absolute;
+  top: -100%;
+  left: -50%;
+  width: 200%;
+  height: 300%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.02) 42%,
+    rgba(20, 184, 166, 0.12) 48%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(20, 184, 166, 0.12) 52%,
+    transparent 58%,
+    transparent 100%
+  );
+  transform: rotate(-25deg);
+  animation: sweepRay 9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+@keyframes sweepRay {
+  0% { transform: translateY(-80%) rotate(-25deg); opacity: 0; }
+  20% { opacity: 1; }
+  60% { opacity: 1; }
+  100% { transform: translateY(80%) rotate(-25deg); opacity: 0; }
+}
+
+/* Geometric Hex/Wave Cyber Pattern in Background */
+.panel-grid-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(rgba(20, 184, 166, 0.2) 1.5px, transparent 1.5px),
+    radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 32px 32px, 16px 16px;
+  background-position: 0 0, 8px 8px;
+  opacity: 0.35;
+  animation: gridDrift 40s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes gridDrift {
+  0% { background-position: 0 0, 8px 8px; }
+  100% { background-position: 100px 100px, 108px 108px; }
+}
+
+/* Overlay Content Panels */
+.overlay-content-panel {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 0 40px;
+  text-align: center;
+  top: 0;
+  height: 100%;
+  width: 50%;
+  transform: translateX(0);
+  transition: transform 0.72s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.5s ease;
+  box-sizing: border-box;
+  z-index: 5;
+}
+
+.overlay-panel-left {
+  transform: translateX(-20%);
+  opacity: 0;
+}
+
+.auth-sliding-box.right-panel-active .overlay-panel-left {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.overlay-panel-right {
+  right: 0;
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.auth-sliding-box.right-panel-active .overlay-panel-right {
+  transform: translateX(20%);
+  opacity: 0;
+}
+
+/* Animated Glass Card inside Overlay */
+.overlay-glass-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 340px;
+  padding: 32px 26px;
+  background: rgba(4, 43, 53, 0.45);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 26px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(13, 148, 136, 0.2);
+  position: relative;
+  overflow: hidden;
+  animation: cardFloatingLevitate 6s ease-in-out infinite alternate;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.overlay-glass-card::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 28px;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(20, 184, 166, 0.6) 50%, rgba(6, 182, 212, 0.1) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: cardBorderShine 5s linear infinite;
+}
+
+@keyframes cardFloatingLevitate {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.01); }
+  100% { transform: translateY(2px) scale(0.995); }
+}
+
+@keyframes cardBorderShine {
+  0% { opacity: 0.6; filter: hue-rotate(0deg); }
+  50% { opacity: 1; filter: hue-rotate(30deg); }
+  100% { opacity: 0.6; filter: hue-rotate(0deg); }
+}
+
+/* Floating Logo with Pulsing Halo Ring */
+.overlay-logo-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.overlay-logo-halo {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.45) 0%, rgba(6, 182, 212, 0.15) 50%, transparent 75%);
+  filter: blur(8px);
+  animation: haloPulse 3.5s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes haloPulse {
+  0% { transform: scale(0.85); opacity: 0.5; }
+  100% { transform: scale(1.3); opacity: 0.9; }
+}
+
+.overlay-logo-floating {
+  animation: logoFloating 5s ease-in-out infinite alternate;
+  will-change: transform;
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes logoFloating {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-7px) rotate(1.5deg); }
+  100% { transform: translateY(3px) rotate(-1.5deg); }
+}
+
+/* Badge Chip with Soft Pulsing Glow & Status Dot */
+.overlay-badge-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 5px 16px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+  color: #ffffff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25), 0 0 15px rgba(20, 184, 166, 0.3);
+  animation: badgeSoftPulse 3.5s ease-in-out infinite alternate;
+}
+
+.overlay-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #34d399;
+  box-shadow: 0 0 8px #34d399;
+  animation: dotPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes dotPing {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.7; }
+}
+
+@keyframes badgeSoftPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3), 0 2px 10px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 20px 3px rgba(20, 184, 166, 0.6), 0 4px 16px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+.overlay-glass-card h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 30%, #a7f3d0 75%, #67e8f9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.overlay-glass-card p {
+  font-size: 0.89rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Ghost Button with Living Glowing Border & Hover Lift */
+.overlay-ghost-btn {
+  position: relative;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 12px 40px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 15px rgba(20, 184, 166, 0.25);
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.overlay-ghost-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transition: 0.5s ease;
+}
+
+.overlay-ghost-btn:hover::before {
+  left: 100%;
+}
+
+.overlay-ghost-btn:hover {
+  background-color: #ffffff;
+  color: #044352;
+  border-color: #ffffff;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4), 0 0 25px rgba(20, 184, 166, 0.5);
+}
+
+.overlay-ghost-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.overlay-ghost-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* ==========================================================================
+   13. ACCESSIBILITY: PREFERS-REDUCED-MOTION
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .auth-glow-orb,
+  .auth-particle,
+  .auth-waves-svg,
+  .auth-card-aura,
+  .overlay-logo-floating,
+  .overlay-badge-chip,
+  .auth-sliding-box.shake-card {
+    animation: none !important;
+    transition: none !important;
+  }
+  .auth-seq-1, .auth-seq-2, .auth-seq-3,
+  .auth-seq-4, .auth-seq-5, .auth-seq-6, .auth-seq-7,
+  .auth-card-aura-wrap,
+  .overlay-glass-card {
+    animation: fadeIn 0.2s ease forwards !important;
+  }
+}
+
+/* ==========================================================================
+   14. RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+@media (max-width: 880px) {
+  .auth-sliding-box {
+    width: 100%;
+    max-width: 440px;
+    min-height: auto;
+    border-radius: 22px;
+  }
+
+  .overlay-outer-frame {
+    display: none;
+  }
+
+  .form-panel-container {
+    position: static;
+    width: 100%;
+    padding: 36px 28px;
+    display: none;
+    transform: none !important;
+  }
+
+  .sign-in-container {
+    display: flex;
+  }
+
+  .auth-sliding-box.right-panel-active .sign-in-container {
+    display: none;
+  }
+
+  .auth-sliding-box.right-panel-active .sign-up-container {
+    display: flex;
+    position: static;
+    width: 100%;
+    transform: none !important;
+    animation: none;
+  }
+
+  .auth-mobile-brand {
+    display: flex;
+  }
+
+  .auth-mobile-switch {
+    display: flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-universe {
+    padding: 16px;
+  }
+
+  .form-panel-container {
+    padding: 28px 20px;
+  }
+
+  .form-head-block h2 {
+    font-size: 1.45rem;
+  }
+
+  .auth-submit-btn {
+    padding: 11px 16px;
+    font-size: 0.9rem;
+  }
+}

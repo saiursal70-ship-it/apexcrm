@@ -5,7 +5,7 @@ import { animateStagger, animateKanbanLift, animateKanbanSnap } from '../utils/a
 // Global reference for bulletproof drag-and-drop state transfer
 let activeKanbanDraggedId = null;
 
-const KanbanBoard = ({ config, records, onStatusChange, onCardClick, onEdit, onDelete, onWhatsApp, onPrintInvoice, onWorkflowAction }) => {
+const KanbanBoard = ({ config, records, onStatusChange, onCardClick, onEdit, onDelete, onWhatsApp, onEmail, onPrintInvoice, onPrintQuotation, onWorkflowAction }) => {
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
   const draggedIdRef = useRef(null);
@@ -232,7 +232,7 @@ const KanbanBoard = ({ config, records, onStatusChange, onCardClick, onEdit, onD
                               <span className="action-hover-tag">Create Quotation</span>
                             </button>
                           )}
-                          {r.phone && (
+                          {onWhatsApp && (
                             <button
                               type="button"
                               className="kanban-action-btn whatsapp-btn action-tooltip-btn"
@@ -243,6 +243,20 @@ const KanbanBoard = ({ config, records, onStatusChange, onCardClick, onEdit, onD
                             >
                               <Icon name="whatsapp" size={13} />
                               <span className="action-hover-tag">WhatsApp</span>
+                            </button>
+                          )}
+                          {onEmail && (
+                            <button
+                              type="button"
+                              className="kanban-action-btn action-tooltip-btn"
+                              style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEmail(r);
+                              }}
+                            >
+                              <Icon name="email" size={13} />
+                              <span className="action-hover-tag">Gmail</span>
                             </button>
                           )}
                           {onPrintInvoice && (r.invoice_number || config.id === 'invoices') && (
@@ -256,6 +270,20 @@ const KanbanBoard = ({ config, records, onStatusChange, onCardClick, onEdit, onD
                             >
                               <Icon name="invoice" size={13} />
                               <span className="action-hover-tag">Invoice</span>
+                            </button>
+                          )}
+                          {onPrintQuotation && (r.quotation_number || config.id === 'quotations') && (
+                            <button
+                              type="button"
+                              className="kanban-action-btn invoice-btn action-tooltip-btn"
+                              style={{ background: '#f3e8ff', color: '#7c3aed' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onPrintQuotation(r);
+                              }}
+                            >
+                              <Icon name="quotation" size={13} />
+                              <span className="action-hover-tag">Quote PDF</span>
                             </button>
                           )}
                           <button

@@ -17,10 +17,10 @@ const entityConfig = {
       { name: 'company_name', label: 'Company Name', type: 'text' },
       { name: 'email', label: 'Email', type: 'email' },
       { name: 'phone', label: 'Phone', type: 'text' },
-      { name: 'source', label: 'Source', type: 'select', options: ['Website', 'Referral', 'Social Media', 'Email Campaign', 'Walk-in'] },
-      { name: 'interested_in', label: 'Interested In', type: 'text' },
-      { name: 'lead_status', label: 'Lead Status', type: 'select', options: ['New', 'Contacted', 'Qualified', 'Lost'] },
-      { name: 'assigned_to', label: 'Assigned To', type: 'text' },
+      { name: 'source', label: 'Source', type: 'select', options: ['Website', 'Referral', 'Social Media', 'Email Campaign', 'Inbound Call', 'Partner Channel', 'Google Ads', 'LinkedIn Lead Gen', 'Walk-in'] },
+      { name: 'interested_in', label: 'Interested In', type: 'select', options: ['Enterprise CRM', 'Cloud Architecture Suite', 'API Gateway Integration', 'Mobile App Solution', 'Sales Pipeline Automation', 'Custom ERP Integration', 'AI Analytics & Reporting', 'Annual Maintenance & Support'] },
+      { name: 'lead_status', label: 'Lead Status', type: 'select', options: ['New', 'Contacted', 'Qualified', 'In Discussion', 'Proposal Sent', 'Lost'] },
+      { name: 'assigned_to', label: 'Assigned To', type: 'select', options: ['Alex Dev (Admin)', 'Elena Rostova (Sales Lead)', 'Sarah Jenkins (Account Exec)', 'Claire Redfield (Support)', 'Michael Vance (Tech Lead)', 'Shruti Joshi (Operations)'] },
     ]
   },
   contacts: {
@@ -37,8 +37,8 @@ const entityConfig = {
       { name: 'company_name', label: 'Company Name', type: 'text' },
       { name: 'email', label: 'Email', type: 'email' },
       { name: 'phone', label: 'Phone', type: 'text' },
-      { name: 'designation', label: 'Designation', type: 'text' },
-      { name: 'relationship', label: 'Relationship', type: 'select', options: ['Client', 'Vendor', 'Partner', 'Other'] },
+      { name: 'designation', label: 'Designation', type: 'select', options: ['Chief Executive Officer (CEO)', 'Chief Technology Officer (CTO)', 'VP of Sales', 'Managing Director', 'Operations Head', 'Procurement Manager', 'Product Lead', 'IT Director', 'General Manager', 'Other'] },
+      { name: 'relationship', label: 'Relationship', type: 'select', options: ['Client', 'Primary Decision Maker', 'Key Stakeholder', 'Vendor', 'Channel Partner', 'Consultant', 'Other'] },
       { name: 'address', label: 'Address', type: 'text' },
       { name: 'notes', label: 'Notes', type: 'textarea' },
     ]
@@ -54,12 +54,12 @@ const entityConfig = {
     columns: ['company_name', 'industry', 'website', 'address', 'gst_tax_id', 'company_size', 'account_owner'],
     fields: [
       { name: 'company_name', label: 'Company Name', type: 'text', required: true },
-      { name: 'industry', label: 'Industry', type: 'text' },
+      { name: 'industry', label: 'Industry', type: 'select', options: ['Technology & Software', 'Financial Services & Banking', 'Healthcare & Life Sciences', 'Manufacturing & Logistics', 'E-Commerce & Retail', 'Consulting & Professional Services', 'Real Estate & Construction', 'Media & Telecom'] },
       { name: 'website', label: 'Website', type: 'text' },
       { name: 'address', label: 'Address', type: 'text' },
       { name: 'gst_tax_id', label: 'GST / Tax ID', type: 'text' },
-      { name: 'company_size', label: 'Company Size', type: 'select', options: ['1-10', '10-50', '50-200', '200-500', '500+'] },
-      { name: 'account_owner', label: 'Account Owner', type: 'text' },
+      { name: 'company_size', label: 'Company Size', type: 'select', options: ['1-10 (Startup)', '10-50 (Small Business)', '50-200 (Mid-Market)', '200-500 (Large Enterprise)', '500+ (Global Enterprise)'] },
+      { name: 'account_owner', label: 'Account Owner', type: 'select', options: ['Alex Dev (Admin)', 'Elena Rostova (Sales Lead)', 'Sarah Jenkins (Account Exec)', 'Claire Redfield (Support)', 'Michael Vance (Tech Lead)', 'Shruti Joshi (Operations)'] },
       { name: 'notes', label: 'Notes', type: 'textarea' },
     ]
   },
@@ -80,8 +80,8 @@ const entityConfig = {
       { name: 'stage', label: 'Stage', type: 'select', options: ['New Leads', 'Contacted', 'Qualified', 'Proposal Sent', 'Negotiation', 'Closed Won', 'Closed Lost'] },
       { name: 'probability', label: 'Probability (%)', type: 'number' },
       { name: 'expected_close_date', label: 'Expected Close Date', type: 'date' },
-      { name: 'source', label: 'Source', type: 'text' },
-      { name: 'assigned_to', label: 'Assigned To', type: 'text' },
+      { name: 'source', label: 'Source', type: 'select', options: ['Website', 'Referral', 'Social Media', 'Email Campaign', 'Inbound Call', 'Partner Channel', 'Direct Sales'] },
+      { name: 'assigned_to', label: 'Assigned To', type: 'select', options: ['Alex Dev (Admin)', 'Elena Rostova (Sales Lead)', 'Sarah Jenkins (Account Exec)', 'Claire Redfield (Support)', 'Michael Vance (Tech Lead)', 'Shruti Joshi (Operations)'] },
     ]
   },
   tasks: {
@@ -96,11 +96,11 @@ const entityConfig = {
     fields: [
       { name: 'task_name', label: 'Task Name', type: 'text', required: true },
       { name: 'related_to', label: 'Related To (Lead/Deal)', type: 'text' },
-      { name: 'type', label: 'Type', type: 'select', options: ['Call', 'Email', 'Meeting', 'Other'] },
+      { name: 'type', label: 'Type', type: 'select', options: ['Call', 'Email', 'Meeting', 'Solution Demo', 'Proposal Review', 'Follow-up', 'Other'] },
       { name: 'due_date', label: 'Due Date', type: 'date' },
-      { name: 'priority', label: 'Priority', type: 'select', options: ['Low', 'Medium', 'High'] },
+      { name: 'priority', label: 'Priority', type: 'select', options: ['Low', 'Medium', 'High', 'Urgent'] },
       { name: 'status', label: 'Status', type: 'select', options: ['Pending', 'In Progress', 'Completed'] },
-      { name: 'assigned_to', label: 'Assigned To', type: 'text' },
+      { name: 'assigned_to', label: 'Assigned To', type: 'select', options: ['Alex Dev (Admin)', 'Elena Rostova (Sales Lead)', 'Sarah Jenkins (Account Exec)', 'Claire Redfield (Support)', 'Michael Vance (Tech Lead)', 'Shruti Joshi (Operations)'] },
     ]
   },
   appointments: {
@@ -134,9 +134,9 @@ const entityConfig = {
     columns: ['product_name', 'category', 'price', 'unit', 'tax', 'status'],
     fields: [
       { name: 'product_name', label: 'Product Name', type: 'text', required: true },
-      { name: 'category', label: 'Category', type: 'text' },
+      { name: 'category', label: 'Category', type: 'select', options: ['Software License', 'Cloud Infrastructure', 'Integration & APIs', 'Setup & Onboarding', 'Maintenance & AMC Support', 'Custom Development'] },
       { name: 'price', label: 'Price (₹)', type: 'number', required: true },
-      { name: 'unit', label: 'Unit', type: 'text' },
+      { name: 'unit', label: 'Unit', type: 'select', options: ['Monthly Subscription', 'Annual License', 'One-time Implementation', 'Hourly Rate', 'Per User / Seat'] },
       { name: 'tax', label: 'Tax (%)', type: 'number' },
       { name: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive', 'Out of Stock'] },
       { name: 'description', label: 'Description', type: 'textarea' },
@@ -160,7 +160,7 @@ const entityConfig = {
       { name: 'amount', label: 'Total Invoice Amount (₹)', type: 'number', required: true },
       { name: 'paid_amount', label: 'Amount Paid by User (₹)', type: 'number' },
       { name: 'payment_status', label: 'Payment Status', type: 'select', options: ['Pending', 'Partially Paid', 'Paid', 'Overdue'] },
-      { name: 'payment_mode', label: 'Payment Mode', type: 'text' },
+      { name: 'payment_mode', label: 'Payment Mode', type: 'select', options: ['Bank Transfer / NEFT', 'UPI / QR Code', 'Credit / Debit Card', 'Stripe Online', 'Net Banking', 'Cheque / Cash'] },
     ]
   },
   quotations: {
@@ -198,7 +198,7 @@ const entityConfig = {
     columns: ['campaign_name', 'type', 'start_date', 'end_date', 'budget', 'status'],
     fields: [
       { name: 'campaign_name', label: 'Campaign Name', type: 'text', required: true },
-      { name: 'type', label: 'Type', type: 'select', options: ['Email', 'Social Media', 'Google Ads', 'Event', 'Other'] },
+      { name: 'type', label: 'Type', type: 'select', options: ['Email Campaign', 'Social Media Ads', 'Google Ads', 'Webinar / Event', 'Direct Outreach', 'Influencer Marketing'] },
       { name: 'start_date', label: 'Start Date', type: 'date' },
       { name: 'end_date', label: 'End Date', type: 'date' },
       { name: 'budget', label: 'Budget (₹)', type: 'number' },
@@ -220,7 +220,7 @@ const entityConfig = {
       { name: 'client_name', label: 'Client Name', type: 'text' },
       { name: 'priority', label: 'Priority', type: 'select', options: ['Low', 'Medium', 'High', 'Urgent'] },
       { name: 'status', label: 'Status', type: 'select', options: ['Open', 'In Progress', 'Resolved', 'Closed'] },
-      { name: 'assigned_to', label: 'Assigned To', type: 'text' },
+      { name: 'assigned_to', label: 'Assigned To', type: 'select', options: ['Alex Dev (Admin)', 'Elena Rostova (Sales Lead)', 'Sarah Jenkins (Account Exec)', 'Claire Redfield (Support)', 'Michael Vance (Tech Lead)', 'Shruti Joshi (Operations)'] },
       { name: 'created_date', label: 'Created Date', type: 'date' },
       { name: 'description', label: 'Description', type: 'textarea' },
     ]

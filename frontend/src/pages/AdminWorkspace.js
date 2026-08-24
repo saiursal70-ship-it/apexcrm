@@ -188,7 +188,7 @@ const TEAM_MEMBERS = [
 
 let globalDraggedId = null;
 
-const AdminWorkspace = () => {
+const AdminWorkspace = ({ embedded = false }) => {
   const { user, token } = useAuth();
   const [tasks, setTasks] = useState(INITIAL_SPRINT_TASKS);
   const [selectedProject, setSelectedProject] = useState('Beyond Gravity');
@@ -386,37 +386,35 @@ const AdminWorkspace = () => {
   ];
 
   if (!isAdmin) {
-    return (
-      <Layout showAdd={false}>
-        <div className="admin-access-restricted-card">
-          <div className="restricted-icon">🔒</div>
-          <h2>Admin Workspace Restricted</h2>
-          <p>This workspace is restricted to System Administrators only.</p>
-        </div>
-      </Layout>
+    const restrictedContent = (
+      <div className="admin-access-restricted-card">
+        <div className="restricted-icon">🔒</div>
+        <h2>Admin Workspace Restricted</h2>
+        <p>This workspace is restricted to System Administrators only.</p>
+      </div>
     );
+    return embedded ? restrictedContent : <Layout showAdd={false}>{restrictedContent}</Layout>;
   }
 
-  return (
-    <Layout showAdd={false}>
+  const workspaceJSX = (
+    <div className={`jira-workspace-container ${embedded ? 'jira-workspace-embedded' : ''}`}>
       {toastMessage && (
         <div className="settings-toast-banner">
           <span>{toastMessage}</span>
         </div>
       )}
 
-      <div className="jira-workspace-container">
-        {/* TOP BREADCRUMB & HEADER */}
-        <div className="jira-header-top">
-          <div className="jira-header-title-area">
-            <div className="jira-breadcrumbs">
-              <span>Projects</span>
-              <span className="separator">/</span>
-              <select 
-                className="project-selector-dropdown"
-                value={selectedProject} 
-                onChange={(e) => setSelectedProject(e.target.value)}
-              >
+      {/* TOP BREADCRUMB & HEADER */}
+      <div className="jira-header-top">
+        <div className="jira-header-title-area">
+          <div className="jira-breadcrumbs">
+            <span>Projects</span>
+            <span className="separator">/</span>
+            <select 
+              className="project-selector-dropdown"
+              value={selectedProject} 
+              onChange={(e) => setSelectedProject(e.target.value)}
+            >
                 <option value="Beyond Gravity">Beyond Gravity</option>
                 <option value="Apex CRM Core">Apex CRM Core</option>
                 <option value="Mobile App v2">Mobile App v2</option>
@@ -743,38 +741,83 @@ const AdminWorkspace = () => {
         {/* COMPLETE SPRINT MODAL */}
         {isSprintModalOpen && (
           <div className="jira-modal-overlay" onClick={() => setIsSprintModalOpen(false)}>
-            <div className="jira-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="jira-modal-content sprint-complete-modal" onClick={(e) => e.stopPropagation()}>
               <div className="jira-modal-header">
-                <h3>Complete Sprint - Beyond Gravity Sprint 14</h3>
-                <button type="button" className="close-btn" onClick={() => setIsSprintModalOpen(false)}>×</button>
+                <div className="modal-title-with-badge">
+                  <div className="modal-header-icon-box">
+                    <Icon name="check" size={20} />
+                  </div>
+                  <div>
+                    <h3>Complete Sprint</h3>
+                    <span className="sprint-name-chip">{selectedProject} Sprint 14</span>
+                  </div>
+                </div>
+                <button type="button" className="close-btn" onClick={() => setIsSprintModalOpen(false)} aria-label="Close">
+                  <Icon name="close" size={18} />
+                </button>
               </div>
 
               <div className="jira-modal-body">
-                <p>This sprint contains:</p>
-                <ul>
-                  <li><strong>{tasks.filter((t) => t.status === 'DONE').length}</strong> completed issues</li>
-                  <li><strong>{tasks.filter((t) => t.status !== 'DONE').length}</strong> open issues</li>
-                </ul>
-                <p>Select destination for open issues:</p>
-                <select className="jira-select-filter" style={{ width: '100%', marginTop: 8 }}>
-                  <option>Beyond Gravity Sprint 15 (Next Sprint)</option>
-                  <option>Backlog</option>
-                </select>
+                {/* Sprint Metrics Cards */}
+                <div className="sprint-metrics-grid">
+                  <div className="sprint-metric-card completed-metric">
+                    <div className="metric-icon-wrap">
+                      <Icon name="check" size={22} />
+                    </div>
+                    <div className="metric-details">
+                      <span className="metric-num">{tasks.filter((t) => t.status === 'DONE').length}</span>
+                      <span className="metric-label">Completed Issues</span>
+                      <span className="metric-sub">Ready to archive</span>
+                    </div>
+                  </div>
+
+                  <div className="sprint-metric-card open-metric">
+                    <div className="metric-icon-wrap">
+                      <Icon name="clock" size={22} />
+                    </div>
+                    <div className="metric-details">
+                      <span className="metric-num">{tasks.filter((t) => t.status !== 'DONE').length}</span>
+                      <span className="metric-label">Open Issues</span>
+                      <span className="metric-sub">Will be transferred</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transfer Destination Section */}
+                <div className="sprint-destination-section">
+                  <label className="sprint-dest-label">
+                    <Icon name="arrowRight" size={15} />
+                    <span>Select destination for open issues:</span>
+                  </label>
+                  <div className="sprint-select-wrapper">
+                    <select className="sprint-destination-select">
+                      <option>{selectedProject} Sprint 15 (Next Sprint)</option>
+                      <option>Backlog</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Helpful Information Notice */}
+                <div className="sprint-info-notice">
+                  <Icon name="info" size={16} />
+                  <span>Remaining issues will be automatically assigned to the destination without losing activity or comments.</span>
+                </div>
               </div>
 
-              <div className="jira-modal-actions" style={{ marginTop: 20 }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setIsSprintModalOpen(false)}>
+              <div className="jira-modal-actions" style={{ marginTop: 22 }}>
+                <button type="button" className="btn btn-secondary sprint-cancel-btn" onClick={() => setIsSprintModalOpen(false)}>
                   Cancel
                 </button>
                 <button
                   type="button"
-                  className="btn btn-primary"
+                  className="btn btn-primary sprint-submit-btn"
                   onClick={() => {
                     setIsSprintModalOpen(false);
-                    showToast('🚀 Sprint 14 completed successfully! Issues moved to Sprint 15.');
+                    showToast(`🚀 Sprint 14 completed! ${tasks.filter((t) => t.status !== 'DONE').length} open issues transferred to Sprint 15.`);
                   }}
                 >
-                  Complete Sprint
+                  <Icon name="check" size={16} />
+                  <span>Complete Sprint</span>
                 </button>
               </div>
             </div>
@@ -793,8 +836,9 @@ const AdminWorkspace = () => {
           }}
         />
       </div>
-    </Layout>
-  );
-};
+    );
+
+    return embedded ? workspaceJSX : <Layout showAdd={false}>{workspaceJSX}</Layout>;
+  };
 
 export default AdminWorkspace;

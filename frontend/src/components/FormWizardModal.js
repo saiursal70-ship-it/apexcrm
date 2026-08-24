@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import Icon from './Icon';
-import { animateModalEnter, animateStagger } from '../utils/animations';
 
 /**
  * FormWizardModal Component
- * Multi-Step Form Engine with progress step indicator, field masking, and draft auto-save.
+ * Multi-Step Side Drawer Engine with progress step indicator, pre-populated dropdowns, and draft auto-save.
  */
 const FormWizardModal = ({
   isOpen,
@@ -26,48 +26,36 @@ const FormWizardModal = ({
   const half = Math.ceil(fields.length / 2);
   const step1Fields = fields.slice(0, half);
   const step2Fields = fields.slice(half);
-
   const totalSteps = step2Fields.length > 0 ? 2 : 1;
 
   useEffect(() => {
     if (isOpen) {
-      animateModalEnter(modalRef.current, overlayRef.current);
-      // Check for saved draft if creating new record
-      if (!editingId) {
-        const draftKey = `crm_form_draft_${entity}`;
-        const savedDraft = localStorage.getItem(draftKey);
-        if (savedDraft) {
-          try {
-            setFormData(JSON.parse(savedDraft));
-          } catch (e) {
-            setFormData(initialData || {});
-          }
-        } else {
-          setFormData(initialData || {});
+      // Initialize form data with properly formatted dates for HTML5 datepickers
+      const sanitized = { ...(initialData || {}) };
+      fields.forEach((f) => {
+        if (f.type === 'date' && sanitized[f.name]) {
+          sanitized[f.name] = String(sanitized[f.name]).substring(0, 10);
         }
-      } else {
-        setFormData(initialData || {});
-      }
+      });
+      setFormData(sanitized);
       setCurrentStep(1);
       setFieldErrors({});
     }
-  }, [isOpen, initialData, editingId, entity]);
+  }, [isOpen, initialData, editingId, entity, fields]);
+
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && isOpen) {
-        onClose();
+        handleClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  useEffect(() => {
-    if (isOpen) {
-      animateStagger('.form-group', { translateY: [12, 0], opacity: [0, 1], duration: 300 });
-    }
-  }, [currentStep, isOpen]);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
 
@@ -75,12 +63,13 @@ const FormWizardModal = ({
     const errors = {};
     fieldsToValidate.forEach((f) => {
       const rawVal = formData[f.name];
-      const strVal = String(rawVal || '').trim();
+      const isNullOrEmpty = rawVal === undefined || rawVal === null || String(rawVal).trim() === '';
+      const strVal = isNullOrEmpty ? '' : String(rawVal).trim();
 
-      if (f.required && !strVal) {
+      if (f.required && isNullOrEmpty) {
         errors[f.name] = `${f.label} is required.`;
-      } else if (f.required && (f.type === 'text' || !f.type) && strVal.length < 3) {
-        errors[f.name] = `${f.label} must be at least 3 characters long.`;
+      } else if (f.required && (f.type === 'text' || !f.type) && strVal.length < 2) {
+        errors[f.name] = `${f.label} must be at least 2 characters long.`;
       }
     });
     setFieldErrors(errors);
@@ -89,16 +78,10 @@ const FormWizardModal = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const updated = { ...formData, [name]: value };
-    setFormData(updated);
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (fieldErrors[name]) {
       setFieldErrors((prev) => ({ ...prev, [name]: null }));
-    }
-
-    // Save draft in localStorage for new records
-    if (!editingId) {
-      localStorage.setItem(`crm_form_draft_${entity}`, JSON.stringify(updated));
     }
   };
 
@@ -124,16 +107,84 @@ const FormWizardModal = ({
 
   const activeFields = currentStep === 1 ? step1Fields : step2Fields;
 
-  return (
-    <div className="modal-overlay" ref={overlayRef} onClick={onClose}>
-      <div className="modal-content wizard-modal-content glass-card" ref={modalRef} onClick={(e) => e.stopPropagation()}>
+  return ReactDOM.createPortal(
+    <div
+      className="modal-overlay wizard-drawer-overlay"
+      ref={overlayRef}
+      onClick={handleClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        zIndex: 99990,
+        display: 'flex',
+        justifyContent: 'flex-end',
+        transition: 'opacity 0.25s ease'
+      }}
+    >
+      <div
+        className="modal-content wizard-modal-content"
+        ref={modalRef}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: '580px',
+          height: '100vh',
+          maxHeight: '100dvh',
+          background: 'var(--color-surface, #ffffff)',
+          borderLeft: '1px solid var(--color-border, #e2e8f0)',
+          boxShadow: '-15px 0 50px rgba(0, 0, 0, 0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
+        }}
+      >
         {/* Header */}
-        <div className="modal-header">
+        <div className="modal-header" style={{
+          padding: '20px 24px',
+          borderBottom: '1px solid var(--color-border, #e2e8f0)',
+          background: 'var(--color-surface-glass, rgba(255, 255, 255, 0.95))',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexShrink: 0
+        }}>
           <div className="wizard-header-title">
-            <span className="drawer-entity-badge">{entity?.toUpperCase()} WIZARD</span>
-            <h2>{editingId ? `Edit ${title}` : `Create New ${title}`}</h2>
+            <span className="drawer-entity-badge" style={{
+              background: 'rgba(37, 99, 235, 0.12)',
+              color: '#2563eb',
+              fontWeight: 800,
+              fontSize: '0.72rem',
+              letterSpacing: '0.06em',
+              padding: '3px 10px',
+              borderRadius: '20px',
+              display: 'inline-block',
+              marginBottom: '4px'
+            }}>
+              {entity?.toUpperCase()} WIZARD
+            </span>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text, #0f172a)' }}>
+              {editingId ? `Edit ${title}` : `Create New ${title}`}
+            </h2>
           </div>
-          <button className="drawer-close-btn" onClick={onClose}>
+          <button
+            type="button"
+            className="drawer-close-btn"
+            onClick={handleClose}
+            style={{
+              background: 'rgba(148, 163, 184, 0.15)',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-text-secondary, #64748b)'
+            }}
+          >
             <Icon name="close" size={18} />
           </button>
         </div>
@@ -213,7 +264,7 @@ const FormWizardModal = ({
                 ← Back
               </button>
             ) : (
-              <button type="button" className="btn btn-outline" onClick={onClose}>
+              <button type="button" className="btn btn-outline" onClick={handleClose}>
                 Cancel
               </button>
             )}
@@ -230,7 +281,8 @@ const FormWizardModal = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
