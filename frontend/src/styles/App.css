@@ -7177,49 +7177,73 @@ body.dark-mode .command-search-input {
 
 /* Kanban Columns Board */
 .jira-kanban-board {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(260px, 1fr));
+  display: flex;
   gap: 16px;
   overflow-x: auto;
-  padding-bottom: 12px;
-}
-
-@media (max-width: 1100px) {
-  .jira-kanban-board {
-    grid-template-columns: repeat(2, minmax(260px, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .jira-kanban-board {
-    grid-template-columns: 1fr;
-  }
+  padding: 4px 4px 20px 4px;
+  min-height: 620px;
+  align-items: stretch;
+  scroll-behavior: smooth;
 }
 
 .jira-kanban-column {
   background: #f4f5f7;
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
+  flex: 0 0 300px;
+  min-width: 300px;
+  max-width: 320px;
   min-height: 550px;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   border: 2px solid transparent;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] .jira-kanban-column,
+body.dark-mode .jira-kanban-column {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .jira-kanban-column.is-drag-over {
   background: #eff6ff;
   border-color: #3b82f6;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
+}
+
+[data-theme="dark"] .jira-kanban-column.is-drag-over,
+body.dark-mode .jira-kanban-column.is-drag-over {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: #60a5fa;
+}
+
+/* WIP Limit Exceeded Warning Style */
+.jira-kanban-column.wip-exceeded {
+  border-color: #f59e0b !important;
+  background: #fffbeb !important;
+}
+
+[data-theme="dark"] .jira-kanban-column.wip-exceeded,
+body.dark-mode .jira-kanban-column.wip-exceeded {
+  border-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.12) !important;
 }
 
 .jira-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 14px;
+  position: relative;
 }
 
 .jira-column-title {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
 }
 
 .column-label-text {
@@ -7228,15 +7252,293 @@ body.dark-mode .command-search-input {
   color: #5e6c84;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .column-label-text,
+body.dark-mode .column-label-text {
+  color: #cbd5e1;
 }
 
 .column-count-chip {
   background: #dfe1e6;
   color: #42526e;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+[data-theme="dark"] .column-count-chip,
+body.dark-mode .column-count-chip {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+}
+
+.column-count-chip.chip-warning {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #f59e0b;
+}
+
+[data-theme="dark"] .column-count-chip.chip-warning,
+body.dark-mode .column-count-chip.chip-warning {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fde68a;
+  border-color: #f59e0b;
+}
+
+/* Column Header Action Dropdown */
+.column-menu-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.column-menu-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #0f172a;
+}
+
+[data-theme="dark"] .column-menu-btn:hover,
+body.dark-mode .column-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.column-context-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  width: 190px;
+  z-index: 100;
+  overflow: hidden;
+  padding: 4px 0;
+  animation: fadeIn 0.15s ease-out;
+}
+
+[data-theme="dark"] .column-context-menu,
+body.dark-mode .column-context-menu {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.column-context-item {
+  width: 100%;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+[data-theme="dark"] .column-context-item,
+body.dark-mode .column-context-item {
+  color: #e2e8f0;
+}
+
+.column-context-item:hover {
+  background: #f1f5f9;
+  color: #2563eb;
+}
+
+[data-theme="dark"] .column-context-item:hover,
+body.dark-mode .column-context-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #60a5fa;
+}
+
+.column-context-item.danger-item:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+[data-theme="dark"] .column-context-item.danger-item:hover,
+body.dark-mode .column-context-item.danger-item:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* Add Column Persistent Button & Card */
+.add-column-card {
+  flex: 0 0 280px;
+  min-width: 280px;
+  max-width: 300px;
+  border-radius: 12px;
+  border: 2px dashed #cbd5e1;
+  background: rgba(241, 245, 249, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 16px;
+  transition: all 0.2s ease;
+  min-height: 180px;
+}
+
+[data-theme="dark"] .add-column-card,
+body.dark-mode .add-column-card {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(30, 41, 59, 0.35);
+}
+
+.add-column-card:hover {
+  border-color: #3b82f6;
+  background: rgba(239, 246, 255, 0.7);
+}
+
+[data-theme="dark"] .add-column-card:hover,
+body.dark-mode .add-column-card:hover {
+  border-color: #60a5fa;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.btn-trigger-add-column {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  color: #475569;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: color 0.15s;
+}
+
+[data-theme="dark"] .btn-trigger-add-column,
+body.dark-mode .btn-trigger-add-column {
+  color: #94a3b8;
+}
+
+.btn-trigger-add-column:hover {
+  color: #2563eb;
+}
+
+[data-theme="dark"] .btn-trigger-add-column:hover,
+body.dark-mode .btn-trigger-add-column:hover {
+  color: #60a5fa;
+}
+
+.add-column-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.add-column-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  outline: none;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+[data-theme="dark"] .add-column-input,
+body.dark-mode .add-column-input {
+  background: #0f172a;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f8fafc;
+}
+
+.add-column-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.add-column-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Empty Column Drop Placeholder */
+.empty-column-placeholder {
+  flex: 1;
+  border: 2px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  min-height: 120px;
+  transition: all 0.2s;
+}
+
+.jira-kanban-column.is-drag-over .empty-column-placeholder {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  color: #2563eb;
+}
+
+/* Fullscreen Workspace Class */
+.jira-workspace-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 999999 !important;
+  background: #f8fafc !important;
+  padding: 20px !important;
+  overflow-y: auto !important;
+}
+
+[data-theme="dark"] .jira-workspace-fullscreen,
+body.dark-mode .jira-workspace-fullscreen {
+  background: #0b1120 !important;
+}
+
+.admin-access-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 20px;
+  color: #059669;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+[data-theme="dark"] .admin-access-badge,
+body.dark-mode .admin-access-badge {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
 }
 
 .jira-column-cards-container {

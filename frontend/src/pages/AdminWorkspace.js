@@ -6,12 +6,12 @@ import axios from 'axios';
 import WorkflowConvertModal from '../components/WorkflowConvertModal';
 import { animateStagger } from '../utils/animations';
 
-// Initial sample data matching the exact screenshot items
+// Initial sample sprint tasks
 const INITIAL_SPRINT_TASKS = [
   {
     id: 1,
     task_key: 'NUC-205',
-    title: 'Implement feedback collector',
+    title: 'Implement feedback collector and telemetry logger',
     epic: 'Feedback',
     task_type: 'story',
     points: 9,
@@ -25,7 +25,7 @@ const INITIAL_SPRINT_TASKS = [
   {
     id: 2,
     task_key: 'NUC-206',
-    title: 'Bump version for new API for billing',
+    title: 'Bump version for new API for billing & automated invoices',
     epic: 'Billing',
     task_type: 'bug',
     points: 3,
@@ -39,7 +39,7 @@ const INITIAL_SPRINT_TASKS = [
   {
     id: 3,
     task_key: 'NUC-208',
-    title: 'Add NPS feedback to wallboard',
+    title: 'Add NPS feedback chart to analytics dashboard',
     epic: 'Feedback',
     task_type: 'task',
     points: 1,
@@ -67,7 +67,7 @@ const INITIAL_SPRINT_TASKS = [
   {
     id: 5,
     task_key: 'NUC-215',
-    title: 'Tech spike on new stripe integration with paypal',
+    title: 'Tech spike on new stripe integration with paypal and UPI gateways',
     epic: 'Integrations',
     task_type: 'task',
     points: 3,
@@ -95,7 +95,7 @@ const INITIAL_SPRINT_TASKS = [
   {
     id: 7,
     task_key: 'NUC-217',
-    title: 'Change phone number field type to \'phone\'',
+    title: 'Change phone number field type to international formatted input',
     epic: 'Core UI',
     task_type: 'task',
     points: 0,
@@ -109,7 +109,7 @@ const INITIAL_SPRINT_TASKS = [
   {
     id: 8,
     task_key: 'NUC-338',
-    title: 'Multi-dest search UI web',
+    title: 'Multi-destination search filter and faceted view web',
     epic: 'Search Engine',
     task_type: 'story',
     points: 5,
@@ -123,7 +123,7 @@ const INITIAL_SPRINT_TASKS = [
   {
     id: 9,
     task_key: 'NUC-336',
-    title: 'Quick booking for accomodations - web',
+    title: 'Quick booking workflow for enterprise accommodations - web',
     epic: 'Booking Engine',
     task_type: 'story',
     points: 0,
@@ -137,7 +137,7 @@ const INITIAL_SPRINT_TASKS = [
   {
     id: 10,
     task_key: 'NUC-346',
-    title: 'Adapt web app no new payments provider',
+    title: 'Adapt web app to new GST & invoicing compliance regulations',
     epic: 'Payment Gateway',
     task_type: 'bug',
     points: 0,
@@ -151,7 +151,7 @@ const INITIAL_SPRINT_TASKS = [
   {
     id: 11,
     task_key: 'NUC-343',
-    title: 'Fluid booking on tablets',
+    title: 'Fluid responsive layout and touch gesture optimization for tablets',
     epic: 'Mobile & Tablet',
     task_type: 'story',
     points: 5,
@@ -165,7 +165,7 @@ const INITIAL_SPRINT_TASKS = [
   {
     id: 12,
     task_key: 'NUC-354',
-    title: 'Shoping cart purchasing error - quick fix required.',
+    title: 'Shopping cart checkout validation fix - quick patch deployment',
     epic: 'Checkout System',
     task_type: 'bug',
     points: 1,
@@ -186,10 +186,22 @@ const TEAM_MEMBERS = [
   { name: 'Claire Redfield', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=150' }
 ];
 
+const DEFAULT_COLUMNS = [
+  { id: 'col-todo', key: 'TO DO', title: 'TO DO', order: 1, wipLimit: null },
+  { id: 'col-inprogress', key: 'IN PROGRESS', title: 'IN PROGRESS', order: 2, wipLimit: 4 },
+  { id: 'col-inreview', key: 'IN REVIEW', title: 'IN REVIEW', order: 3, wipLimit: 3 },
+  { id: 'col-done', key: 'DONE', title: 'DONE', order: 4, wipLimit: null }
+];
+
 let globalDraggedId = null;
 
+/**
+ * AdminWorkspace Component
+ * Advanced Agile Sprint Board with Dynamic Column Management, Drag-and-Drop,
+ * WIP Limits, and Multi-Stage Project Handover automations.
+ */
 const AdminWorkspace = ({ embedded = false }) => {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const [tasks, setTasks] = useState(INITIAL_SPRINT_TASKS);
   const [selectedProject, setSelectedProject] = useState('Beyond Gravity');
   const [searchQuery, setSearchQuery] = useState('');
@@ -199,6 +211,33 @@ const AdminWorkspace = ({ embedded = false }) => {
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Dynamic Column State (persisted in localStorage)
+  const [columns, setColumns] = useState(() => {
+    try {
+      const saved = localStorage.getItem('crm_sprint_columns');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_COLUMNS;
+  });
+
+  // Inline column addition state
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
+  const [newColTitle, setNewColTitle] = useState('');
+  const [newColWipLimit, setNewColWipLimit] = useState('');
+
+  // Column header editing & context menu states
+  const [editingColId, setEditingColId] = useState(null);
+  const [editingColTitle, setEditingColTitle] = useState('');
+  const [openMenuColId, setOpenMenuColId] = useState(null);
+
+  // WIP Limit Modal State
+  const [wipModalCol, setWipModalCol] = useState(null);
+  const [wipLimitInput, setWipLimitInput] = useState('');
 
   // Modal states
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
@@ -218,6 +257,32 @@ const AdminWorkspace = ({ embedded = false }) => {
   });
 
   const draggedRef = useRef(null);
+  const workspaceRef = useRef(null);
+
+  // Persist columns to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('crm_sprint_columns', JSON.stringify(columns));
+    } catch (e) {}
+  }, [columns]);
+
+  // Sync fullscreen state
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Close context menu on outside click
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenMenuColId(null);
+    };
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
 
   // Fetch tasks from API backend if available
   useEffect(() => {
@@ -229,23 +294,25 @@ const AdminWorkspace = ({ embedded = false }) => {
         if (res.data && Array.isArray(res.data) && res.data.length > 0) {
           setTasks(res.data);
         }
-      } catch (err) {
-        // Fallback to initial local tasks if backend table not ready
-      }
+      } catch (err) {}
     };
     fetchTasks();
   }, [token]);
 
   useEffect(() => {
-    animateStagger('.sprint-column', { translateY: [18, 0], scale: [0.98, 1], duration: 500 });
-    animateStagger('.sprint-task-card', { translateY: [12, 0], opacity: [0, 1], duration: 350 });
-  }, [tasks.length, selectedEpic, selectedAssignee]);
+    animateStagger('.jira-kanban-column', { translateY: [18, 0], scale: [0.98, 1], duration: 450 });
+    animateStagger('.jira-card', { translateY: [10, 0], opacity: [0, 1], duration: 350 });
+  }, [tasks.length, selectedEpic, selectedAssignee, columns.length]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setIsNewTaskModalOpen(false);
         setIsSprintModalOpen(false);
+        setIsAddingColumn(false);
+        setEditingColId(null);
+        setOpenMenuColId(null);
+        setWipModalCol(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -257,10 +324,140 @@ const AdminWorkspace = ({ embedded = false }) => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Check admin privileges
-  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.designation?.toLowerCase().includes('admin') || true;
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setIsFullscreen(false);
+    }
+  };
 
-  // HTML5 Drag & Drop handlers
+  // --- Dynamic Column Actions ---
+
+  const handleAddColumnSubmit = (e) => {
+    e?.preventDefault();
+    if (!newColTitle.trim()) return;
+
+    const formattedKey = newColTitle.trim().toUpperCase();
+    const newCol = {
+      id: `col-${Date.now()}`,
+      key: formattedKey,
+      title: newColTitle.trim(),
+      order: columns.length + 1,
+      wipLimit: newColWipLimit ? parseInt(newColWipLimit, 10) : null
+    };
+
+    setColumns([...columns, newCol]);
+    setNewColTitle('');
+    setNewColWipLimit('');
+    setIsAddingColumn(false);
+    showToast(`✅ Added column "${newCol.title}"`);
+  };
+
+  const handleStartRename = (col, e) => {
+    e?.stopPropagation();
+    setEditingColId(col.id);
+    setEditingColTitle(col.title);
+    setOpenMenuColId(null);
+  };
+
+  const handleSaveRename = (colId) => {
+    if (!editingColTitle.trim()) {
+      setEditingColId(null);
+      return;
+    }
+
+    const targetCol = columns.find((c) => c.id === colId);
+    if (!targetCol) return;
+
+    const oldKey = targetCol.key;
+    const newKey = editingColTitle.trim().toUpperCase();
+    const newTitle = editingColTitle.trim();
+
+    setColumns((prevCols) =>
+      prevCols.map((c) =>
+        c.id === colId ? { ...c, title: newTitle, key: newKey } : c
+      )
+    );
+
+    // Update tasks that belonged to the old column key
+    if (oldKey !== newKey) {
+      setTasks((prevTasks) =>
+        prevTasks.map((t) => (t.status?.toUpperCase() === oldKey ? { ...t, status: newKey } : t))
+      );
+    }
+
+    setEditingColId(null);
+    showToast(`✏️ Renamed column to "${newTitle}"`);
+  };
+
+  const handleOpenWipModal = (col, e) => {
+    e?.stopPropagation();
+    setWipModalCol(col);
+    setWipLimitInput(col.wipLimit ? String(col.wipLimit) : '');
+    setOpenMenuColId(null);
+  };
+
+  const handleSaveWipLimit = (e) => {
+    e?.preventDefault();
+    if (!wipModalCol) return;
+
+    const numericVal = parseInt(wipLimitInput, 10);
+    const finalLimit = isNaN(numericVal) || numericVal <= 0 ? null : numericVal;
+
+    setColumns((prevCols) =>
+      prevCols.map((c) =>
+        c.id === wipModalCol.id ? { ...c, wipLimit: finalLimit } : c
+      )
+    );
+
+    showToast(finalLimit ? `🎯 Set WIP limit of ${finalLimit} for "${wipModalCol.title}"` : `Cleared WIP limit for "${wipModalCol.title}"`);
+    setWipModalCol(null);
+  };
+
+  const handleClearTasks = (colKey, e) => {
+    e?.stopPropagation();
+    setOpenMenuColId(null);
+    const defaultColKey = columns[0]?.key || 'TO DO';
+
+    setTasks((prevTasks) =>
+      prevTasks.map((t) =>
+        t.status?.toUpperCase() === colKey.toUpperCase() ? { ...t, status: defaultColKey } : t
+      )
+    );
+
+    showToast(`🧹 Cleared all tasks from "${colKey}" to "${defaultColKey}"`);
+  };
+
+  const handleDeleteColumn = (colId, colKey, e) => {
+    e?.stopPropagation();
+    setOpenMenuColId(null);
+
+    if (columns.length <= 1) {
+      alert('The board must have at least one column.');
+      return;
+    }
+
+    const defaultColKey = columns.find((c) => c.id !== colId)?.key || 'TO DO';
+
+    // Move orphaned tasks to default column
+    setTasks((prevTasks) =>
+      prevTasks.map((t) =>
+        t.status?.toUpperCase() === colKey.toUpperCase() ? { ...t, status: defaultColKey } : t
+      )
+    );
+
+    // Remove column
+    setColumns((prevCols) => prevCols.filter((c) => c.id !== colId));
+    showToast(`🗑️ Deleted column "${colKey}". Tasks moved to "${defaultColKey}".`);
+  };
+
+  // --- HTML5 Drag & Drop handlers ---
+
   const handleDragStart = (e, id) => {
     globalDraggedId = id;
     setDraggedId(id);
@@ -294,17 +491,15 @@ const AdminWorkspace = ({ embedded = false }) => {
 
     if (id) {
       const taskId = isNaN(Number(id)) ? id : Number(id);
-      
-      // Local state update immediately
+
       setTasks((prevTasks) =>
         prevTasks.map((t) => (t.id === taskId ? { ...t, status: colStatus } : t))
       );
 
       showToast(`Task moved to "${colStatus}"`);
 
-      // Persist to backend
       try {
-        await axios.put(`http://localhost:5001/api/sprint-tasks/${taskId}`, 
+        await axios.put(`http://localhost:5001/api/sprint-tasks/${taskId}`,
           { status: colStatus },
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
@@ -323,7 +518,7 @@ const AdminWorkspace = ({ embedded = false }) => {
     draggedRef.current = null;
   };
 
-  // Add new task
+  // Create new task
   const handleCreateTask = async (e) => {
     e.preventDefault();
     if (!newTaskForm.title.trim()) return;
@@ -338,7 +533,7 @@ const AdminWorkspace = ({ embedded = false }) => {
       points: Number(newTaskForm.points) || 1,
       subtask_count: 0,
       priority: newTaskForm.priority,
-      status: newTaskForm.status,
+      status: newTaskForm.status || columns[0]?.key || 'TO DO',
       assignee_name: newTaskForm.assignee_name,
       assignee_avatar: newTaskForm.assignee_avatar,
       project_name: selectedProject
@@ -354,7 +549,7 @@ const AdminWorkspace = ({ embedded = false }) => {
       task_type: 'story',
       points: 3,
       priority: 'Medium',
-      status: 'TO DO',
+      status: columns[0]?.key || 'TO DO',
       assignee_name: 'Alex Dev',
       assignee_avatar: TEAM_MEMBERS[1].avatar
     });
@@ -378,26 +573,11 @@ const AdminWorkspace = ({ embedded = false }) => {
 
   const epicsList = Array.from(new Set(tasks.map((t) => t.epic).filter(Boolean)));
 
-  const columns = [
-    { key: 'TO DO', label: 'TO DO' },
-    { key: 'IN PROGRESS', label: 'IN PROGRESS' },
-    { key: 'IN REVIEW', label: 'IN REVIEW' },
-    { key: 'DONE', label: 'DONE' }
-  ];
-
-  if (!isAdmin) {
-    const restrictedContent = (
-      <div className="admin-access-restricted-card">
-        <div className="restricted-icon">🔒</div>
-        <h2>Admin Workspace Restricted</h2>
-        <p>This workspace is restricted to System Administrators only.</p>
-      </div>
-    );
-    return embedded ? restrictedContent : <Layout showAdd={false}>{restrictedContent}</Layout>;
-  }
-
   const workspaceJSX = (
-    <div className={`jira-workspace-container ${embedded ? 'jira-workspace-embedded' : ''}`}>
+    <div
+      ref={workspaceRef}
+      className={`jira-workspace-container ${embedded ? 'jira-workspace-embedded' : ''} ${isFullscreen ? 'jira-workspace-fullscreen' : ''}`}
+    >
       {toastMessage && (
         <div className="settings-toast-banner">
           <span>{toastMessage}</span>
@@ -410,238 +590,447 @@ const AdminWorkspace = ({ embedded = false }) => {
           <div className="jira-breadcrumbs">
             <span>Projects</span>
             <span className="separator">/</span>
-            <select 
+            <select
               className="project-selector-dropdown"
-              value={selectedProject} 
+              value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
             >
-                <option value="Beyond Gravity">Beyond Gravity</option>
-                <option value="Apex CRM Core">Apex CRM Core</option>
-                <option value="Mobile App v2">Mobile App v2</option>
-              </select>
-            </div>
-            <h1 className="jira-page-title">Admin Board</h1>
-            <p className="jira-board-subtitle" style={{ fontSize: '0.88rem', color: '#94a3b8', margin: '2px 0 0', fontWeight: 500 }}>
-              Control users, permissions, and your CRM workspace.
-            </p>
+              <option value="Beyond Gravity">Beyond Gravity</option>
+              <option value="Apex CRM Core">Apex CRM Core</option>
+              <option value="Mobile App v2">Mobile App v2</option>
+            </select>
+            <span className="separator">/</span>
+            <span className="admin-access-badge">
+              <span>⚡</span> ADMIN ACCESS GRANTED
+            </span>
           </div>
-
-          <div className="jira-header-actions">
-            <div className="sprint-lightning-badge" title="Sprint active">
-              <span className="lightning-icon">⚡</span>
-            </div>
-            <div className="sprint-timer-badge">
-              <Icon name="clock" size={14} />
-              <span>4 days remaining</span>
-            </div>
-            <button 
-              type="button" 
-              className="btn-jira-primary"
-              onClick={() => setIsSprintModalOpen(true)}
-            >
-              Complete sprint
-            </button>
-            <button 
-              type="button" 
-              className="btn-jira-primary"
-              style={{ background: 'linear-gradient(135deg, #ec4899, #d946ef)', borderColor: '#ec4899' }}
-              onClick={() => setIsHandoverModalOpen(true)}
-              title="Deliver Project, Create Warranty Support Ticket & Schedule AMC Renewal"
-            >
-              🎉 Handover & AMC
-            </button>
-            <button 
-              type="button" 
-              className="btn-jira-icon"
-              onClick={() => setIsNewTaskModalOpen(true)}
-              title="Create Task"
-            >
-              <Icon name="plus" size={18} />
-            </button>
-          </div>
+          <h1 className="jira-page-title">Admin Workspace &amp; Sprint Board</h1>
+          <p className="jira-board-subtitle" style={{ fontSize: '0.88rem', color: '#94a3b8', margin: '2px 0 0', fontWeight: 500 }}>
+            Agile project workspace for administrative users only. Manage active sprints, drag-and-drop task cards, Epics, and team assignments.
+          </p>
         </div>
 
-        {/* TOOLBAR CONTROLS ROW */}
-        <div className="jira-toolbar-row">
-          <div className="jira-toolbar-left">
-            {/* Search Box */}
-            <div className="jira-search-box">
-              <Icon name="search" size={16} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search board..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button type="button" className="clear-search" onClick={() => setSearchQuery('')}>×</button>
-              )}
-            </div>
+        <div className="jira-header-actions">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={toggleFullscreen}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', fontSize: '0.82rem', fontWeight: 700 }}
+            title="Toggle Fullscreen Board View"
+          >
+            <Icon name="grid" size={14} />
+            <span>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen View'}</span>
+          </button>
 
-            {/* Avatar Filter Group */}
-            <div className="jira-avatar-group">
-              {TEAM_MEMBERS.map((member, idx) => (
-                <button
-                  key={`member-${member.name}-${idx}`}
-                  type="button"
-                  className={`avatar-filter-btn ${selectedAssignee === member.name ? 'active' : ''}`}
-                  onClick={() => setSelectedAssignee(selectedAssignee === member.name ? 'All' : member.name)}
-                  title={`Filter by ${member.name}`}
-                >
-                  <img src={member.avatar} alt={member.name} />
-                </button>
-              ))}
-              <div className="avatar-overflow-badge">+3</div>
-            </div>
-
-            {/* Epic Filter Dropdown */}
-            <div className="jira-dropdown-wrap">
-              <select
-                className="jira-select-filter"
-                value={selectedEpic}
-                onChange={(e) => setSelectedEpic(e.target.value)}
-              >
-                <option value="All">Epic ⌄</option>
-                {epicsList.map((epic, idx) => (
-                  <option key={`epic-opt-${epic}-${idx}`} value={epic}>{epic}</option>
-                ))}
-              </select>
-            </div>
+          <div className="sprint-timer-badge">
+            <Icon name="clock" size={14} />
+            <span>4 days remaining</span>
           </div>
 
-          <div className="jira-toolbar-right">
-            <span className="groupby-label">GROUP BY</span>
+          <button
+            type="button"
+            className="btn-jira-primary"
+            onClick={() => setIsSprintModalOpen(true)}
+          >
+            Complete sprint
+          </button>
+
+          <button
+            type="button"
+            className="btn-jira-primary"
+            style={{ background: 'linear-gradient(135deg, #ec4899, #d946ef)', borderColor: '#ec4899' }}
+            onClick={() => setIsHandoverModalOpen(true)}
+            title="Deliver Project, Create Warranty Support Ticket & Schedule AMC Renewal"
+          >
+            🎉 Handover &amp; AMC
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{ background: '#2563eb', padding: '8px 16px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            onClick={() => setIsNewTaskModalOpen(true)}
+          >
+            <Icon name="plus" size={16} />
+            <span>Create Issue</span>
+          </button>
+        </div>
+      </div>
+
+      {/* TOOLBAR CONTROLS ROW */}
+      <div className="jira-toolbar-row">
+        <div className="jira-toolbar-left">
+          {/* Search Box */}
+          <div className="jira-search-box">
+            <Icon name="search" size={16} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search board..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button type="button" className="clear-search" onClick={() => setSearchQuery('')}>×</button>
+            )}
+          </div>
+
+          {/* Avatar Filter Group */}
+          <div className="jira-avatar-group">
+            {TEAM_MEMBERS.map((member, idx) => (
+              <button
+                key={`member-${member.name}-${idx}`}
+                type="button"
+                className={`avatar-filter-btn ${selectedAssignee === member.name ? 'active' : ''}`}
+                onClick={() => setSelectedAssignee(selectedAssignee === member.name ? 'All' : member.name)}
+                title={`Filter by ${member.name}`}
+              >
+                <img src={member.avatar} alt={member.name} />
+              </button>
+            ))}
+            <div className="avatar-overflow-badge">+3</div>
+          </div>
+
+          {/* Epic Filter Dropdown */}
+          <div className="jira-dropdown-wrap">
             <select
-              className="jira-select-groupby"
-              value={groupBy}
-              onChange={(e) => setGroupBy(e.target.value)}
+              className="jira-select-filter"
+              value={selectedEpic}
+              onChange={(e) => setSelectedEpic(e.target.value)}
             >
-              <option value="Choices">Choices ⌄</option>
-              <option value="Status">Status</option>
-              <option value="Assignee">Assignee</option>
-              <option value="Priority">Priority</option>
-              <option value="Epic">Epic</option>
+              <option value="All">Epic ⌄</option>
+              {epicsList.map((epic, idx) => (
+                <option key={`epic-opt-${epic}-${idx}`} value={epic}>{epic}</option>
+              ))}
             </select>
           </div>
         </div>
 
-        {/* KANBAN BOARD COLUMNS */}
-        <div className="jira-kanban-board">
-          {columns.map((col, colIdx) => {
-            const colTasks = filteredTasks.filter(
-              (t) => t.status?.toUpperCase() === col.key.toUpperCase()
-            );
-            const isOver = dragOverCol === col.key;
+        <div className="jira-toolbar-right">
+          <span className="groupby-label">GROUP BY</span>
+          <select
+            className="jira-select-groupby"
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value)}
+          >
+            <option value="Choices">Choices ⌄</option>
+            <option value="Status">Status</option>
+            <option value="Assignee">Assignee</option>
+            <option value="Priority">Priority</option>
+            <option value="Epic">Epic</option>
+          </select>
+        </div>
+      </div>
 
-            return (
+      {/* DYNAMIC KANBAN BOARD WITH PERSISTENT COLUMN MANAGEMENT */}
+      <div className="jira-kanban-board">
+        {columns.map((col, colIdx) => {
+          const colTasks = filteredTasks.filter(
+            (t) => t.status?.toUpperCase() === col.key.toUpperCase()
+          );
+          const isOver = dragOverCol === col.key;
+          const isWipExceeded = Boolean(col.wipLimit && colTasks.length > col.wipLimit);
+          const isEditingThisTitle = editingColId === col.id;
+          const isMenuOpen = openMenuColId === col.id;
+
+          return (
+            <div
+              key={`admin-col-${col.id || col.key}-${colIdx}`}
+              className={`jira-kanban-column ${isOver ? 'is-drag-over' : ''} ${isWipExceeded ? 'wip-exceeded' : ''}`}
+              onDragOver={(e) => handleDragOver(e, col.key)}
+              onDrop={(e) => handleDrop(e, col.key)}
+            >
+              {/* Column Header */}
+              <div className="jira-column-header">
+                <div className="jira-column-title">
+                  {isEditingThisTitle ? (
+                    <input
+                      type="text"
+                      className="add-column-input"
+                      style={{ padding: '3px 6px', fontSize: '0.78rem', fontWeight: 800 }}
+                      value={editingColTitle}
+                      autoFocus
+                      onChange={(e) => setEditingColTitle(e.target.value)}
+                      onBlur={() => handleSaveRename(col.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveRename(col.id);
+                        if (e.key === 'Escape') setEditingColId(null);
+                      }}
+                    />
+                  ) : (
+                    <span
+                      className="column-label-text"
+                      title="Double-click to rename column"
+                      onDoubleClick={(e) => handleStartRename(col, e)}
+                    >
+                      {col.title}
+                    </span>
+                  )}
+
+                  {/* Task Counter Badge (with WIP Limit warning if set) */}
+                  <span className={`column-count-chip ${isWipExceeded ? 'chip-warning' : ''}`} title={col.wipLimit ? `WIP Limit: ${col.wipLimit}` : 'Task count'}>
+                    {col.wipLimit ? `${colTasks.length}/${col.wipLimit}` : colTasks.length}
+                    {isWipExceeded && ' ⚠️'}
+                  </span>
+                </div>
+
+                {/* Column Action Dropdown (Three Dots ⋮) */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    className="column-menu-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuColId(isMenuOpen ? null : col.id);
+                    }}
+                    title="Column Actions"
+                  >
+                    <Icon name="dots" size={16} />
+                  </button>
+
+                  {isMenuOpen && (
+                    <div className="column-context-menu" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="column-context-item"
+                        onClick={(e) => handleStartRename(col, e)}
+                      >
+                        <Icon name="edit" size={14} />
+                        <span>Rename Column</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="column-context-item"
+                        onClick={(e) => handleOpenWipModal(col, e)}
+                      >
+                        <Icon name="activity" size={14} />
+                        <span>Set WIP Limit</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="column-context-item"
+                        onClick={(e) => handleClearTasks(col.key, e)}
+                      >
+                        <Icon name="archive" size={14} />
+                        <span>Clear Tasks</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="column-context-item danger-item"
+                        onClick={(e) => handleDeleteColumn(col.id, col.key, e)}
+                      >
+                        <Icon name="trash" size={14} />
+                        <span>Delete Column</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tasks Container */}
               <div
-                key={`admin-col-${col.key}-${colIdx}`}
-                className={`jira-kanban-column ${isOver ? 'is-drag-over' : ''}`}
+                className="jira-column-cards-container"
                 onDragOver={(e) => handleDragOver(e, col.key)}
                 onDrop={(e) => handleDrop(e, col.key)}
               >
-                <div className="jira-column-header">
-                  <div className="jira-column-title">
-                    <span className="column-label-text">{col.label}</span>
-                    <span className="column-count-chip">{colTasks.length}</span>
-                  </div>
-                </div>
+                {colTasks.map((task, tIdx) => (
+                  <div
+                    key={`admin-task-${task.id || task.task_key || tIdx}-${tIdx}`}
+                    className={`jira-card ${draggedId === task.id ? 'is-dragging-card' : ''}`}
+                    draggable="true"
+                    onDragStart={(e) => handleDragStart(e, task.id)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <h4 className="jira-card-title">{task.title}</h4>
 
-                <div 
-                  className="jira-column-cards-container"
-                  onDragOver={(e) => handleDragOver(e, col.key)}
-                  onDrop={(e) => handleDrop(e, col.key)}
-                >
-                  {colTasks.map((task, tIdx) => (
-                    <div
-                      key={`admin-task-${task.id || task.task_key || tIdx}-${tIdx}`}
-                      className={`jira-card ${draggedId === task.id ? 'is-dragging-card' : ''}`}
-                      draggable="true"
-                      onDragStart={(e) => handleDragStart(e, task.id)}
-                      onDragEnd={handleDragEnd}
-                    >
-                      <h4 className="jira-card-title">{task.title}</h4>
+                    <div className="jira-card-bottom-row">
+                      <div className="jira-card-left-tags">
+                        {/* Task Type Badge */}
+                        <span className={`jira-type-icon type-${task.task_type}`} title={task.task_type}>
+                          {task.task_type === 'story' && '🔖'}
+                          {task.task_type === 'bug' && '🟥'}
+                          {task.task_type === 'task' && '🟦'}
+                        </span>
 
-                      <div className="jira-card-bottom-row">
-                        <div className="jira-card-left-tags">
-                          {/* Task Type Badge */}
-                          <span className={`jira-type-icon type-${task.task_type}`} title={task.task_type}>
-                            {task.task_type === 'story' && '🔖'}
-                            {task.task_type === 'bug' && '🟥'}
-                            {task.task_type === 'task' && '🟦'}
+                        <span className="jira-task-key">{task.task_key}</span>
+
+                        {/* Done checkmark */}
+                        {(task.status === 'DONE' || col.key === 'DONE') && (
+                          <span className="jira-done-checkmark" title="Completed">✓</span>
+                        )}
+
+                        {/* Subtask branch count */}
+                        {task.subtask_count > 0 && (
+                          <span className="jira-subtask-badge" title={`${task.subtask_count} subtasks`}>
+                            <span className="branch-icon">🌿</span> {task.subtask_count}
                           </span>
+                        )}
 
-                          <span className="jira-task-key">{task.task_key}</span>
+                        {/* Priority Arrow Badge */}
+                        <span className={`jira-priority-icon priority-${task.priority?.toLowerCase()}`}>
+                          {task.priority === 'High' && '⏫'}
+                          {task.priority === 'Medium' && '='}
+                          {task.priority === 'Low' && '⏬'}
+                        </span>
 
-                          {/* Done checkmark */}
-                          {task.status === 'DONE' && (
-                            <span className="jira-done-checkmark" title="Completed">✓</span>
-                          )}
+                        {/* Story Points Badge */}
+                        {task.points > 0 && (
+                          <span className="jira-points-badge">{task.points}</span>
+                        )}
+                      </div>
 
-                          {/* Subtask branch count */}
-                          {task.subtask_count > 0 && (
-                            <span className="jira-subtask-badge" title={`${task.subtask_count} subtasks`}>
-                              <span className="branch-icon">🌿</span> {task.subtask_count}
-                            </span>
-                          )}
-
-                          {/* Priority Arrow Badge */}
-                          <span className={`jira-priority-icon priority-${task.priority?.toLowerCase()}`}>
-                            {task.priority === 'High' && '⏫'}
-                            {task.priority === 'Medium' && '='}
-                            {task.priority === 'Low' && '⏬'}
-                          </span>
-
-                          {/* Story Points Badge */}
-                          {task.points > 0 && (
-                            <span className="jira-points-badge">{task.points}</span>
-                          )}
-                        </div>
-
-                        <div className="jira-card-right-avatar">
-                          <img
-                            src={task.assignee_avatar || 'https://i.pravatar.cc/150'}
-                            alt={task.assignee_name}
-                            title={task.assignee_name}
-                          />
-                        </div>
+                      {/* Right Avatar */}
+                      <div className="jira-card-assignee" title={`Assigned to ${task.assignee_name}`}>
+                        <img src={task.assignee_avatar} alt={task.assignee_name} />
                       </div>
                     </div>
-                  ))}
+                  </div>
+                ))}
 
-                  {colTasks.length === 0 && !isOver && (
-                    <div className="jira-empty-col-placeholder">
-                      <span>No issues</span>
-                    </div>
-                  )}
+                {colTasks.length === 0 && (
+                  <div className="empty-column-placeholder">
+                    <span>No tasks yet. Drop items here.</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
 
-                  {isOver && (
-                    <div className="jira-drop-zone-highlight">
-                      + Move to {col.label}
-                    </div>
-                  )}
+        {/* PERSISTENT '+ ADD COLUMN' CARD AT RIGHTMOST END OF BOARD */}
+        <div className="add-column-card">
+          {isAddingColumn ? (
+            <form className="add-column-form" onSubmit={handleAddColumnSubmit}>
+              <input
+                type="text"
+                className="add-column-input"
+                placeholder="Column title (e.g. QA / Testing)..."
+                value={newColTitle}
+                autoFocus
+                onChange={(e) => setNewColTitle(e.target.value)}
+              />
+
+              <input
+                type="number"
+                min="1"
+                max="50"
+                className="add-column-input"
+                placeholder="WIP Limit (optional)..."
+                value={newColWipLimit}
+                onChange={(e) => setNewColWipLimit(e.target.value)}
+              />
+
+              <div className="add-column-actions">
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm"
+                  style={{ background: '#2563eb', flex: 1, padding: '7px', fontWeight: 700 }}
+                >
+                  Add Column
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ padding: '7px 12px' }}
+                  onClick={() => {
+                    setIsAddingColumn(false);
+                    setNewColTitle('');
+                    setNewColWipLimit('');
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              type="button"
+              className="btn-trigger-add-column"
+              onClick={() => setIsAddingColumn(true)}
+            >
+              <Icon name="plus" size={18} />
+              <span>+ Add Column</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* SET WORK IN PROGRESS (WIP) LIMIT MODAL */}
+      {wipModalCol && (
+        <div className="jira-modal-overlay" onClick={() => setWipModalCol(null)}>
+          <div className="jira-modal-content" style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="jira-modal-header">
+              <h3>Set WIP Limit: {wipModalCol.title}</h3>
+              <button type="button" className="close-btn" onClick={() => setWipModalCol(null)} aria-label="Close">
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveWipLimit}>
+              <div className="jira-modal-body">
+                <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '0 0 14px 0' }}>
+                  Set the maximum number of active task cards allowed in <strong>{wipModalCol.title}</strong> to prevent workflow bottlenecks.
+                </p>
+
+                <div className="form-group">
+                  <label>Maximum Task Cards (WIP Limit)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    placeholder="e.g. 3 (leave blank for unlimited)"
+                    value={wipLimitInput}
+                    autoFocus
+                    onChange={(e) => setWipLimitInput(e.target.value)}
+                  />
                 </div>
               </div>
-            );
-          })}
-        </div>
 
-        {/* CREATE TASK MODAL */}
-        {isNewTaskModalOpen && (
-          <div className="jira-modal-overlay" onClick={() => setIsNewTaskModalOpen(false)}>
-            <div className="jira-modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="jira-modal-header">
-                <h3>Create New Issue</h3>
-                <button type="button" className="close-btn" onClick={() => setIsNewTaskModalOpen(false)}>×</button>
+              <div className="jira-modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setWipLimitInput('');
+                    setColumns((prevCols) =>
+                      prevCols.map((c) => (c.id === wipModalCol.id ? { ...c, wipLimit: null } : c))
+                    );
+                    setWipModalCol(null);
+                    showToast(`Cleared WIP limit for "${wipModalCol.title}"`);
+                  }}
+                >
+                  Clear Limit
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save WIP Limit
+                </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-              <form onSubmit={handleCreateTask} className="jira-modal-form">
+      {/* CREATE NEW TASK MODAL */}
+      {isNewTaskModalOpen && (
+        <div className="jira-modal-overlay" onClick={() => setIsNewTaskModalOpen(false)}>
+          <div className="jira-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="jira-modal-header">
+              <h3>Create Issue</h3>
+              <button type="button" className="close-btn" onClick={() => setIsNewTaskModalOpen(false)} aria-label="Close">
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateTask}>
+              <div className="jira-modal-body">
                 <div className="form-group">
-                  <label>Issue Summary / Title *</label>
+                  <label>Summary / Title *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g., Integrate payment webhook validation"
+                    placeholder="e.g. Implement payment gateway webhook receiver"
                     value={newTaskForm.title}
                     onChange={(e) => setNewTaskForm({ ...newTaskForm, title: e.target.value })}
                   />
@@ -698,10 +1087,11 @@ const AdminWorkspace = ({ embedded = false }) => {
                       value={newTaskForm.status}
                       onChange={(e) => setNewTaskForm({ ...newTaskForm, status: e.target.value })}
                     >
-                      <option value="TO DO">TO DO</option>
-                      <option value="IN PROGRESS">IN PROGRESS</option>
-                      <option value="IN REVIEW">IN REVIEW</option>
-                      <option value="DONE">DONE</option>
+                      {columns.map((col) => (
+                        <option key={`opt-col-${col.key}`} value={col.key}>
+                          {col.title}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -724,121 +1114,122 @@ const AdminWorkspace = ({ embedded = false }) => {
                     </select>
                   </div>
                 </div>
-
-                <div className="jira-modal-actions">
-                  <button type="button" className="btn btn-secondary" onClick={() => setIsNewTaskModalOpen(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary">
-                    Create Issue
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* COMPLETE SPRINT MODAL */}
-        {isSprintModalOpen && (
-          <div className="jira-modal-overlay" onClick={() => setIsSprintModalOpen(false)}>
-            <div className="jira-modal-content sprint-complete-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="jira-modal-header">
-                <div className="modal-title-with-badge">
-                  <div className="modal-header-icon-box">
-                    <Icon name="check" size={20} />
-                  </div>
-                  <div>
-                    <h3>Complete Sprint</h3>
-                    <span className="sprint-name-chip">{selectedProject} Sprint 14</span>
-                  </div>
-                </div>
-                <button type="button" className="close-btn" onClick={() => setIsSprintModalOpen(false)} aria-label="Close">
-                  <Icon name="close" size={18} />
-                </button>
               </div>
 
-              <div className="jira-modal-body">
-                {/* Sprint Metrics Cards */}
-                <div className="sprint-metrics-grid">
-                  <div className="sprint-metric-card completed-metric">
-                    <div className="metric-icon-wrap">
-                      <Icon name="check" size={22} />
-                    </div>
-                    <div className="metric-details">
-                      <span className="metric-num">{tasks.filter((t) => t.status === 'DONE').length}</span>
-                      <span className="metric-label">Completed Issues</span>
-                      <span className="metric-sub">Ready to archive</span>
-                    </div>
-                  </div>
-
-                  <div className="sprint-metric-card open-metric">
-                    <div className="metric-icon-wrap">
-                      <Icon name="clock" size={22} />
-                    </div>
-                    <div className="metric-details">
-                      <span className="metric-num">{tasks.filter((t) => t.status !== 'DONE').length}</span>
-                      <span className="metric-label">Open Issues</span>
-                      <span className="metric-sub">Will be transferred</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Transfer Destination Section */}
-                <div className="sprint-destination-section">
-                  <label className="sprint-dest-label">
-                    <Icon name="arrowRight" size={15} />
-                    <span>Select destination for open issues:</span>
-                  </label>
-                  <div className="sprint-select-wrapper">
-                    <select className="sprint-destination-select">
-                      <option>{selectedProject} Sprint 15 (Next Sprint)</option>
-                      <option>Backlog</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Helpful Information Notice */}
-                <div className="sprint-info-notice">
-                  <Icon name="info" size={16} />
-                  <span>Remaining issues will be automatically assigned to the destination without losing activity or comments.</span>
-                </div>
-              </div>
-
-              <div className="jira-modal-actions" style={{ marginTop: 22 }}>
-                <button type="button" className="btn btn-secondary sprint-cancel-btn" onClick={() => setIsSprintModalOpen(false)}>
+              <div className="jira-modal-actions">
+                <button type="button" className="btn btn-secondary" onClick={() => setIsNewTaskModalOpen(false)}>
                   Cancel
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-primary sprint-submit-btn"
-                  onClick={() => {
-                    setIsSprintModalOpen(false);
-                    showToast(`🚀 Sprint 14 completed! ${tasks.filter((t) => t.status !== 'DONE').length} open issues transferred to Sprint 15.`);
-                  }}
-                >
-                  <Icon name="check" size={16} />
-                  <span>Complete Sprint</span>
+                <button type="submit" className="btn btn-primary">
+                  Create Issue
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* COMPLETE SPRINT MODAL */}
+      {isSprintModalOpen && (
+        <div className="jira-modal-overlay" onClick={() => setIsSprintModalOpen(false)}>
+          <div className="jira-modal-content sprint-complete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="jira-modal-header">
+              <div className="modal-title-with-badge">
+                <div className="modal-header-icon-box">
+                  <Icon name="check" size={20} />
+                </div>
+                <div>
+                  <h3>Complete Sprint</h3>
+                  <span className="sprint-name-chip">{selectedProject} Sprint 14</span>
+                </div>
+              </div>
+              <button type="button" className="close-btn" onClick={() => setIsSprintModalOpen(false)} aria-label="Close">
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+
+            <div className="jira-modal-body">
+              {/* Sprint Metrics Cards */}
+              <div className="sprint-metrics-grid">
+                <div className="sprint-metric-card completed-metric">
+                  <div className="metric-icon-wrap">
+                    <Icon name="check" size={22} />
+                  </div>
+                  <div className="metric-details">
+                    <span className="metric-num">{tasks.filter((t) => t.status === 'DONE').length}</span>
+                    <span className="metric-label">Completed Issues</span>
+                    <span className="metric-sub">Ready to archive</span>
+                  </div>
+                </div>
+
+                <div className="sprint-metric-card open-metric">
+                  <div className="metric-icon-wrap">
+                    <Icon name="clock" size={22} />
+                  </div>
+                  <div className="metric-details">
+                    <span className="metric-num">{tasks.filter((t) => t.status !== 'DONE').length}</span>
+                    <span className="metric-label">Open Issues</span>
+                    <span className="metric-sub">Will be transferred</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transfer Destination Section */}
+              <div className="sprint-destination-section">
+                <label className="sprint-dest-label">
+                  <Icon name="arrowRight" size={15} />
+                  <span>Select destination for open issues:</span>
+                </label>
+                <div className="sprint-select-wrapper">
+                  <select className="sprint-destination-select">
+                    <option>{selectedProject} Sprint 15 (Next Sprint)</option>
+                    <option>Backlog</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Helpful Information Notice */}
+              <div className="sprint-info-notice">
+                <Icon name="info" size={16} />
+                <span>Remaining issues will be automatically assigned to the destination without losing activity or comments.</span>
+              </div>
+            </div>
+
+            <div className="jira-modal-actions" style={{ marginTop: 22 }}>
+              <button type="button" className="btn btn-secondary sprint-cancel-btn" onClick={() => setIsSprintModalOpen(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary sprint-submit-btn"
+                onClick={() => {
+                  setIsSprintModalOpen(false);
+                  showToast(`🚀 Sprint 14 completed! ${tasks.filter((t) => t.status !== 'DONE').length} open issues transferred to Sprint 15.`);
+                }}
+              >
+                <Icon name="check" size={16} />
+                <span>Complete Sprint</span>
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 1-CLICK PROJECT HANDOVER & AMC SETUP MODAL */}
-        <WorkflowConvertModal
-          isOpen={isHandoverModalOpen}
-          type="complete_delivery"
-          record={{ project_name: selectedProject, client_name: selectedProject }}
-          onClose={() => setIsHandoverModalOpen(false)}
-          onSuccess={() => {
-            setTasks((prev) => prev.map((t) => ({ ...t, status: 'DONE' })));
-            showToast('🎉 Project delivery completed! Support Ticket & AMC Deal created.');
-          }}
-        />
-      </div>
-    );
+      {/* 1-CLICK PROJECT HANDOVER & AMC SETUP MODAL */}
+      <WorkflowConvertModal
+        isOpen={isHandoverModalOpen}
+        type="complete_delivery"
+        record={{ project_name: selectedProject, client_name: selectedProject }}
+        onClose={() => setIsHandoverModalOpen(false)}
+        onSuccess={() => {
+          setTasks((prev) => prev.map((t) => ({ ...t, status: 'DONE' })));
+          showToast('🎉 Project delivery completed! Support Ticket & AMC Deal created.');
+        }}
+      />
+    </div>
+  );
 
-    return embedded ? workspaceJSX : <Layout showAdd={false}>{workspaceJSX}</Layout>;
-  };
+  return embedded ? workspaceJSX : <Layout showAdd={false}>{workspaceJSX}</Layout>;
+};
 
 export default AdminWorkspace;
