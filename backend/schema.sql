@@ -243,4 +243,37 @@ INSERT INTO sprint_tasks (task_key, title, epic, task_type, points, subtask_coun
 ('NUC-343', 'Fluid booking on tablets', 'Mobile & Tablet', 'story', 5, 0, 'Medium', 'DONE', 'Michael Vance', 'https://i.pravatar.cc/150?u=michael', 'Beyond Gravity'),
 ('NUC-354', 'Shoping cart purchasing error - quick fix required.', 'Checkout System', 'bug', 1, 0, 'High', 'DONE', 'Elena Rostova', 'https://i.pravatar.cc/150?u=elena', 'Beyond Gravity');
 
+-- ---------------- WORKSPACES & WORKSPACE TYPES ----------------
+CREATE TABLE IF NOT EXISTS workspaces (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    workspace_name VARCHAR(150) NOT NULL,
+    workspace_code VARCHAR(50) NOT NULL,
+    container_type VARCHAR(100) DEFAULT 'Dev',
+    description TEXT,
+    status VARCHAR(30) DEFAULT 'Active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL
+);
+
+INSERT INTO workspaces (workspace_name, workspace_code, container_type, description) VALUES
+('Development', 'DEV-WEB', 'Dev', 'Default engineering & development workspace hub');
+
+CREATE TABLE IF NOT EXISTS workspace_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    type_name VARCHAR(100) NOT NULL,
+    type_code VARCHAR(50) NOT NULL,
+    description VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL
+);
+
+INSERT INTO workspace_types (type_name, type_code, description) VALUES
+('Development', 'Dev', 'Engineering, software dev and devops containers'),
+('Internal Department', 'Dept', 'Company internal divisions and operational departments'),
+('Client Organization', 'Client', 'External client dedicated workspaces'),
+('Project Group', 'Proj', 'Multi-disciplinary project workspaces'),
+('Support Unit', 'Supp', 'Customer success and ticketing operations'),
+('Sales & Marketing', 'Sales', 'Lead generation and sales pipeline operations');
+
+
 

@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { changeUserPassword, updateUserProfile } from '../api/api';
 import { animateStagger } from '../utils/animations';
 import AdminWorkspace from './AdminWorkspace';
+import EnterpriseAdminEngine from '../components/EnterpriseAdminEngine';
 
 const DEFAULT_ROLES = [
   { id: 'admin', role: 'System Administrator', department: 'Executive Management', designation: 'Chief Administrator', level: 'Level 5 (Full Access)', userCount: 3 },
@@ -1124,6 +1125,8 @@ const Settings = () => {
           {/* TAB: USERS & RBAC */}
           {activeTab === 'users-rbac' && (
             <div className="settings-section">
+              <EnterpriseAdminEngine />
+
               <div className="section-header">
                 <h2>Users &amp; Role-Based Access Control (RBAC)</h2>
                 <p>Select a user role to automatically load, view, and sync matching Designation and Department details.</p>

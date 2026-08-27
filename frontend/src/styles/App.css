@@ -4173,6 +4173,9 @@ body.dark-mode .content-search-box:focus-within .search-icon {
   border-radius: 16px;
   padding: 28px 32px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .settings-section .section-header {
@@ -6897,6 +6900,10 @@ body.dark-mode .command-search-input {
   flex-direction: column;
   gap: 20px;
   padding: 8px 4px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Embedded Admin Workspace inside Settings */

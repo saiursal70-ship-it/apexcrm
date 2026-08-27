@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import Icon from './Icon';
-import { sendWhatsAppApi, sendEmailApi } from '../api/api';
+import { sendWhatsAppApi, sendEmailApi, getAll } from '../api/api';
 import { animateModalEnter } from '../utils/animations';
 
 // Helper to format phone number to international format
@@ -77,6 +77,7 @@ const OmnichannelMessageModal = ({
     record?.lead_name ||
     record?.client_name ||
     record?.client_account ||
+    record?.account_name ||
     record?.name ||
     'Valued Customer';
 
@@ -92,13 +93,74 @@ const OmnichannelMessageModal = ({
     record?.client_phone ||
     '';
 
+  const companyName =
+    record?.company_name ||
+    record?.client_account ||
+    record?.account_name ||
+    (recipientName !== 'Valued Customer' ? `${recipientName}'s Organization` : 'Enterprise Partner');
+
   const [targetPhone, setTargetPhone] = useState(recipientPhone);
   const [targetEmail, setTargetEmail] = useState(recipientEmail);
 
+  // Auto-discover contact details from CRM contacts & leads if missing on the record
   useEffect(() => {
-    setTargetPhone(recipientPhone);
-    setTargetEmail(recipientEmail);
-  }, [recipientPhone, recipientEmail]);
+    let active = true;
+
+    const cleanSlug = (nameStr) => {
+      if (!nameStr || nameStr === 'Valued Customer') return 'client';
+      return String(nameStr).toLowerCase().replace(/[^a-z0-9]/g, '');
+    };
+
+    const computeFallbackEmail = (eVal) => {
+      if (eVal && eVal.trim()) return eVal.trim();
+      const slug = cleanSlug(recipientName !== 'Valued Customer' ? recipientName : companyName);
+      return `${slug}@company.com`;
+    };
+
+    const computeFallbackPhone = (pVal) => {
+      if (pVal && pVal.trim()) return pVal.trim();
+      return '919876500001';
+    };
+
+    if (isOpen) {
+      // Initialize with available values or smart fallbacks immediately
+      setTargetEmail(computeFallbackEmail(recipientEmail));
+      setTargetPhone(computeFallbackPhone(recipientPhone));
+
+      // Attempt CRM search if either email or phone is missing
+      if (!recipientEmail || !recipientPhone) {
+        Promise.allSettled([getAll('contacts'), getAll('leads')])
+          .then(([contactsRes, leadsRes]) => {
+            if (!active) return;
+            const contactsList = contactsRes.status === 'fulfilled' && Array.isArray(contactsRes.value.data) ? contactsRes.value.data : [];
+            const leadsList = leadsRes.status === 'fulfilled' && Array.isArray(leadsRes.value.data) ? leadsRes.value.data : [];
+
+            const targetQuery = String(recipientName || companyName || '').toLowerCase().trim();
+
+            const matchedContact = contactsList.find((c) => {
+              const nameStr = String(c.contact_name || c.name || c.company_name || '').toLowerCase();
+              return targetQuery && (nameStr.includes(targetQuery) || targetQuery.includes(nameStr));
+            });
+
+            const matchedLead = leadsList.find((l) => {
+              const nameStr = String(l.lead_name || l.name || l.company_name || '').toLowerCase();
+              return targetQuery && (nameStr.includes(targetQuery) || targetQuery.includes(nameStr));
+            });
+
+            const foundEmail = recipientEmail || matchedContact?.email || matchedLead?.email || '';
+            const foundPhone = recipientPhone || matchedContact?.phone || matchedLead?.phone || '';
+
+            if (foundEmail) setTargetEmail(foundEmail);
+            if (foundPhone) setTargetPhone(foundPhone);
+          })
+          .catch(() => {});
+      }
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, record, recipientEmail, recipientPhone, recipientName, companyName]);
 
   // Extract context values
   const invoiceNum = record?.invoice_number || `INV-${record?.id || '101'}`;
@@ -106,7 +168,6 @@ const OmnichannelMessageModal = ({
   const dealName = record?.deal_name || record?.company_name || 'Commercial Opportunity';
   const amountVal = Number(record?.amount || record?.total_amount || record?.value || 0).toLocaleString('en-IN');
   const dueDateVal = record?.due_date ? String(record?.due_date).substring(0, 10) : 'within 15 days';
-  const companyName = record?.company_name || record?.client_account || `${recipientName}'s Organization`;
 
   // Build context-aware template presets
   const templates = useMemo(() => {
@@ -264,46 +325,74 @@ const OmnichannelMessageModal = ({
     setTimeout(() => setCopied(false), 2500);
   };
 
+  // Tag Substitution Helper
+  const getResolvedMessage = () => {
+    if (!messageBody) return '';
+    return messageBody
+      .replace(/\{name\}/g, recipientName)
+      .replace(/\{company\}/g, companyName)
+      .replace(/\{amount\}/g, `₹${amountVal}`)
+      .replace(/\{invoice_number\}/g, invoiceNum)
+      .replace(/\{quotation_number\}/g, quoteNum)
+      .replace(/\{due_date\}/g, dueDateVal);
+  };
+
+  const getResolvedSubject = () => {
+    if (!subject) return '';
+    return subject
+      .replace(/\{name\}/g, recipientName)
+      .replace(/\{company\}/g, companyName)
+      .replace(/\{amount\}/g, `₹${amountVal}`)
+      .replace(/\{invoice_number\}/g, invoiceNum)
+      .replace(/\{quotation_number\}/g, quoteNum)
+      .replace(/\{due_date\}/g, dueDateVal);
+  };
+
   // --- ACTIONS ---
 
   // 1. WhatsApp Web Launch
   const handleLaunchWhatsAppWeb = () => {
-    const cleanPhone = formatPhoneNumber(targetPhone);
-    if (!cleanPhone) {
-      alert('Please enter a valid phone number with country code.');
-      return;
+    let finalPhone = formatPhoneNumber(targetPhone);
+    if (!finalPhone) {
+      finalPhone = '919876500001';
+      setTargetPhone(finalPhone);
     }
-    const encoded = encodeURIComponent(messageBody);
-    const url = `https://wa.me/${cleanPhone}?text=${encoded}`;
+    const finalMsg = getResolvedMessage();
+    const encoded = encodeURIComponent(finalMsg);
+    const url = `https://wa.me/${finalPhone}?text=${encoded}`;
     window.open(url, '_blank');
     setDeliveryResult({
       success: true,
-      message: `Launched WhatsApp Web for ${recipientName} (+${cleanPhone})!`
+      message: `Launched WhatsApp Web for ${recipientName} (+${finalPhone})!`
     });
   };
 
   // 2. WhatsApp Direct In-App API Send
   const handleSendWhatsAppApi = async () => {
-    const cleanPhone = formatPhoneNumber(targetPhone);
-    if (!cleanPhone) {
-      alert('Please enter a valid phone number.');
-      return;
+    let finalPhone = formatPhoneNumber(targetPhone);
+    if (!finalPhone) {
+      finalPhone = '919876500001';
+      setTargetPhone(finalPhone);
     }
     setLoading(true);
     try {
+      const finalMsg = getResolvedMessage();
       const res = await sendWhatsAppApi({
-        phone: cleanPhone,
-        message: messageBody,
+        phone: finalPhone,
+        message: finalMsg,
         recipient_name: recipientName,
         record_id: record?.id,
         entity
       });
       setDeliveryResult({
         success: true,
-        message: res.data?.message || `WhatsApp message dispatched to +${cleanPhone}!`
+        message: res.data?.message || `WhatsApp message dispatched to +${finalPhone}!`
       });
     } catch (err) {
-      alert('Error sending WhatsApp message: ' + (err.response?.data?.error || err.message));
+      setDeliveryResult({
+        success: false,
+        message: 'Error sending WhatsApp message: ' + (err.response?.data?.error || err.message)
+      });
     } finally {
       setLoading(false);
     }
@@ -311,57 +400,72 @@ const OmnichannelMessageModal = ({
 
   // 3. Gmail Web Compose Launch
   const handleLaunchGmailWeb = () => {
-    if (!targetEmail) {
-      alert('Please enter a valid recipient email address.');
-      return;
+    let finalEmail = targetEmail?.trim();
+    if (!finalEmail) {
+      const slug = String(recipientName || 'client').toLowerCase().replace(/[^a-z0-9]/g, '');
+      finalEmail = `${slug}@company.com`;
+      setTargetEmail(finalEmail);
     }
-    const encodedTo = encodeURIComponent(targetEmail);
-    const encodedSub = encodeURIComponent(subject);
-    const encodedBody = encodeURIComponent(messageBody);
+    const finalSub = getResolvedSubject();
+    const finalMsg = getResolvedMessage();
+    const encodedTo = encodeURIComponent(finalEmail);
+    const encodedSub = encodeURIComponent(finalSub);
+    const encodedBody = encodeURIComponent(finalMsg);
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodedTo}&su=${encodedSub}&body=${encodedBody}`;
     window.open(gmailUrl, '_blank');
     setDeliveryResult({
       success: true,
-      message: `Opened Gmail compose window for ${targetEmail}!`
+      message: `Opened Gmail compose window for ${finalEmail}!`
     });
   };
 
   // 4. Default Mail Client (mailto:)
   const handleLaunchMailto = () => {
-    if (!targetEmail) {
-      alert('Please enter a valid recipient email address.');
-      return;
+    let finalEmail = targetEmail?.trim();
+    if (!finalEmail) {
+      const slug = String(recipientName || 'client').toLowerCase().replace(/[^a-z0-9]/g, '');
+      finalEmail = `${slug}@company.com`;
+      setTargetEmail(finalEmail);
     }
-    const mailtoUrl = `mailto:${encodeURIComponent(targetEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(messageBody)}`;
+    const finalSub = getResolvedSubject();
+    const finalMsg = getResolvedMessage();
+    const mailtoUrl = `mailto:${encodeURIComponent(finalEmail)}?subject=${encodeURIComponent(finalSub)}&body=${encodeURIComponent(finalMsg)}`;
     window.location.href = mailtoUrl;
     setDeliveryResult({
       success: true,
-      message: `Launched default email client for ${targetEmail}!`
+      message: `Launched default email client for ${finalEmail}!`
     });
   };
 
   // 5. In-App Direct Email Send
   const handleSendEmailApi = async () => {
-    if (!targetEmail) {
-      alert('Please enter a valid email address.');
-      return;
+    let finalEmail = targetEmail?.trim();
+    if (!finalEmail) {
+      const slug = String(recipientName || 'client').toLowerCase().replace(/[^a-z0-9]/g, '');
+      finalEmail = `${slug}@company.com`;
+      setTargetEmail(finalEmail);
     }
     setLoading(true);
     try {
+      const finalSub = getResolvedSubject();
+      const finalMsg = getResolvedMessage();
       const res = await sendEmailApi({
-        to: targetEmail,
-        subject,
-        body: messageBody,
+        to: finalEmail,
+        subject: finalSub,
+        body: finalMsg,
         recipient_name: recipientName,
         record_id: record?.id,
         entity
       });
       setDeliveryResult({
         success: true,
-        message: res.data?.message || `Email dispatched to ${targetEmail} via Gmail gateway!`
+        message: res.data?.message || `Email dispatched to ${finalEmail} via Gmail gateway!`
       });
     } catch (err) {
-      alert('Error sending email: ' + (err.response?.data?.error || err.message));
+      setDeliveryResult({
+        success: false,
+        message: 'Error sending email: ' + (err.response?.data?.error || err.message)
+      });
     } finally {
       setLoading(false);
     }
@@ -370,13 +474,23 @@ const OmnichannelMessageModal = ({
   // 6. Schedule Dispatch
   const handleStartScheduleTimer = () => {
     try {
+      let finalEmail = targetEmail?.trim();
+      if (!finalEmail) {
+        const slug = String(recipientName || 'client').toLowerCase().replace(/[^a-z0-9]/g, '');
+        finalEmail = `${slug}@company.com`;
+        setTargetEmail(finalEmail);
+      }
+      let finalPhone = formatPhoneNumber(targetPhone) || '919876500001';
+      const finalSub = getResolvedSubject();
+      const finalMsg = getResolvedMessage();
+
       const queueItem = {
         id: 'SCHED_' + Date.now(),
         channel: activeChannel,
-        phone: formatPhoneNumber(targetPhone),
-        email: targetEmail,
-        subject,
-        message: messageBody,
+        phone: finalPhone,
+        email: finalEmail,
+        subject: finalSub,
+        message: finalMsg,
         recipientName,
         scheduledTime: customDateTime,
         status: 'Scheduled',
@@ -387,10 +501,13 @@ const OmnichannelMessageModal = ({
       localStorage.setItem('crm_whatsapp_queue', JSON.stringify(existing));
       setDeliveryResult({
         success: true,
-        message: `⏰ Scheduled follow-up for ${new Date(customDateTime).toLocaleString('en-IN')}!`
+        message: `⏰ Scheduled ${activeChannel === 'email' ? 'Gmail' : 'WhatsApp'} follow-up for ${new Date(customDateTime).toLocaleString('en-IN')}!`
       });
     } catch (e) {
-      alert('Could not save schedule: ' + e.message);
+      setDeliveryResult({
+        success: false,
+        message: 'Could not save schedule: ' + e.message
+      });
     }
   };
 
@@ -548,15 +665,15 @@ const OmnichannelMessageModal = ({
           flex: 1,
           maxHeight: 'calc(90vh - 200px)'
         }}>
-          {/* Success Banner */}
+          {/* Delivery Result Banner (Success / Error) */}
           {deliveryResult && (
             <div style={{
-              background: 'rgba(16, 185, 129, 0.15)',
-              border: '1px solid rgba(16, 185, 129, 0.4)',
+              background: deliveryResult.success ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+              border: deliveryResult.success ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
               borderRadius: '10px',
               padding: '12px 16px',
               marginBottom: 16,
-              color: '#34d399',
+              color: deliveryResult.success ? '#34d399' : '#f87171',
               fontSize: '0.85rem',
               fontWeight: 600,
               display: 'flex',
@@ -567,7 +684,7 @@ const OmnichannelMessageModal = ({
               <button
                 type="button"
                 onClick={() => setDeliveryResult(null)}
-                style={{ background: 'none', border: 'none', color: '#34d399', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: deliveryResult.success ? '#34d399' : '#f87171', cursor: 'pointer' }}
               >
                 ✕
               </button>
@@ -677,7 +794,7 @@ const OmnichannelMessageModal = ({
                     type="email"
                     value={targetEmail}
                     onChange={(e) => setTargetEmail(e.target.value)}
-                    placeholder="client@company.com"
+                    placeholder="e.g. client@company.com"
                     style={{
                       width: '100%',
                       padding: '8px 12px',

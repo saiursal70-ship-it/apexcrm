@@ -51,4 +51,12 @@ router.use('/sprint-tasks', createCrudRouter('sprint_tasks', [
     'task_key', 'title', 'epic', 'task_type', 'points', 'subtask_count', 'priority', 'status', 'assignee_name', 'assignee_avatar', 'project_name'
 ]));
 
+router.use('/workspaces', createCrudRouter('workspaces', [
+    'workspace_name', 'workspace_code', 'container_type', 'description', 'status'
+]));
+
+router.use('/workspace-types', createCrudRouter('workspace_types', [
+    'type_name', 'type_code', 'description'
+]));
+
 module.exports = router;

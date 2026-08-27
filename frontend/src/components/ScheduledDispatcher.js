@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import Icon from './Icon';
-import { sendWhatsAppApi } from '../api/api';
+import { sendWhatsAppApi, sendEmailApi } from '../api/api';
 
 /**
  * ScheduledDispatcher Component
- * Global background watcher that monitors scheduled WhatsApp dispatches and triggers automated API send or prompt on exact scheduled time.
+ * Global background watcher that monitors scheduled WhatsApp & Gmail dispatches and triggers automated API send or prompt on exact scheduled time.
  */
 const ScheduledDispatcher = () => {
   const [activePrompt, setActivePrompt] = useState(null);
@@ -33,14 +33,24 @@ const ScheduledDispatcher = () => {
               queueUpdated = true;
 
               if (item.method === 'api' || !item.method) {
-                // 100% Automated Background API Dispatch (Zero-Click)
+                // Automated Background API Dispatch
                 try {
-                  await sendWhatsAppApi({
-                    phone: item.phone,
-                    message: item.message,
-                    recipient_name: item.recipientName
-                  });
-                  setApiToast(`🤖 Auto-Sent via WhatsApp API to ${item.recipientName} (+${item.phone})!`);
+                  if (item.channel === 'email') {
+                    await sendEmailApi({
+                      to: item.email,
+                      subject: item.subject,
+                      body: item.message,
+                      recipient_name: item.recipientName
+                    });
+                    setApiToast(`✉️ Auto-Sent via Gmail Gateway to ${item.recipientName} (${item.email})!`);
+                  } else {
+                    await sendWhatsAppApi({
+                      phone: item.phone,
+                      message: item.message,
+                      recipient_name: item.recipientName
+                    });
+                    setApiToast(`🤖 Auto-Sent via WhatsApp API to ${item.recipientName} (+${item.phone})!`);
+                  }
                   setTimeout(() => setApiToast(null), 5000);
                 } catch (e) {
                   setActivePrompt(item);
@@ -68,11 +78,22 @@ const ScheduledDispatcher = () => {
   }, []);
 
   const handleLaunchNow = () => {
-    const encoded = encodeURIComponent(activePrompt.message);
-    const url = `https://wa.me/${activePrompt.phone}?text=${encoded}`;
-    window.open(url, '_blank');
+    if (!activePrompt) return;
+    if (activePrompt.channel === 'email') {
+      const encodedTo = encodeURIComponent(activePrompt.email || '');
+      const encodedSub = encodeURIComponent(activePrompt.subject || '');
+      const encodedBody = encodeURIComponent(activePrompt.message || '');
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodedTo}&su=${encodedSub}&body=${encodedBody}`;
+      window.open(gmailUrl, '_blank');
+    } else {
+      const encoded = encodeURIComponent(activePrompt.message || '');
+      const url = `https://wa.me/${activePrompt.phone}?text=${encoded}`;
+      window.open(url, '_blank');
+    }
     setActivePrompt(null);
   };
+
+  const isEmail = activePrompt?.channel === 'email';
 
   return ReactDOM.createPortal(
     <>
@@ -122,9 +143,9 @@ const ScheduledDispatcher = () => {
             right: 24,
             zIndex: 100001,
             backgroundColor: '#0f172a',
-            border: '1.5px solid #25d366',
+            border: isEmail ? '1.5px solid #ef4444' : '1.5px solid #25d366',
             borderRadius: '16px',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(37, 211, 102, 0.3)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(37, 99, 235, 0.3)',
             padding: '20px 24px',
             maxWidth: 380,
             width: '90vw',
@@ -137,19 +158,19 @@ const ScheduledDispatcher = () => {
                 width: 36,
                 height: 36,
                 borderRadius: '10px',
-                background: 'rgba(37, 211, 102, 0.18)',
-                color: '#25d366',
+                background: isEmail ? 'rgba(239, 68, 68, 0.18)' : 'rgba(37, 211, 102, 0.18)',
+                color: isEmail ? '#ef4444' : '#25d366',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <Icon name="whatsapp" size={20} />
+                <Icon name={isEmail ? 'email' : 'whatsapp'} size={20} />
               </div>
               <div>
                 <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc' }}>
-                  Scheduled Message Alert
+                  Scheduled {isEmail ? 'Email' : 'WhatsApp'} Alert
                 </h4>
-                <span style={{ fontSize: '0.75rem', color: '#86efac', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.75rem', color: isEmail ? '#fca5a5' : '#86efac', fontWeight: 600 }}>
                   Dispatch Time Arrived! ⏰
                 </span>
               </div>
@@ -179,8 +200,13 @@ const ScheduledDispatcher = () => {
             marginBottom: 16
           }}>
             <div style={{ marginBottom: 4 }}>
-              <strong>To:</strong> {activePrompt.recipientName} ({activePrompt.phone})
+              <strong>To:</strong> {activePrompt.recipientName} ({isEmail ? activePrompt.email : activePrompt.phone})
             </div>
+            {isEmail && activePrompt.subject && (
+              <div style={{ marginBottom: 4 }}>
+                <strong>Subject:</strong> {activePrompt.subject}
+              </div>
+            )}
             <div style={{
               color: '#94a3b8',
               fontSize: '0.78rem',
@@ -214,7 +240,7 @@ const ScheduledDispatcher = () => {
               type="button"
               onClick={handleLaunchNow}
               style={{
-                background: '#25d366',
+                background: isEmail ? '#ea4335' : '#25d366',
                 border: 'none',
                 color: '#ffffff',
                 borderRadius: '8px',
@@ -227,8 +253,8 @@ const ScheduledDispatcher = () => {
                 gap: 6
               }}
             >
-              <Icon name="whatsapp" size={14} />
-              <span>Send on WhatsApp</span>
+              <Icon name={isEmail ? 'email' : 'whatsapp'} size={14} />
+              <span>{isEmail ? 'Open in Gmail Compose' : 'Send on WhatsApp'}</span>
             </button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import Icon from '../components/Icon';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import WorkflowConvertModal from '../components/WorkflowConvertModal';
+import EnterpriseAdminEngine from '../components/EnterpriseAdminEngine';
 import { animateStagger } from '../utils/animations';
 
 // Initial sample sprint tasks
@@ -583,6 +584,9 @@ const AdminWorkspace = ({ embedded = false }) => {
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* ENTERPRISE ADMINISTRATION ENGINE SECTION */}
+      <EnterpriseAdminEngine />
 
       {/* TOP BREADCRUMB & HEADER */}
       <div className="jira-header-top">
