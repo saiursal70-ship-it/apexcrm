@@ -814,12 +814,12 @@ const AdminWorkspace = ({ embedded = false }) => {
             </select>
             <span className="separator">/</span>
             <span className="admin-access-badge">
-              <span>⚡</span> WORKSHOP ACCESS
+              <span>⚡</span> WORKSPACE ACCESS
             </span>
           </div>
-          <h1 className="jira-page-title">Workshop</h1>
+          <h1 className="jira-page-title">Workspace</h1>
           <p className="jira-board-subtitle" style={{ fontSize: '0.88rem', color: '#94a3b8', margin: '2px 0 0', fontWeight: 500 }}>
-            Agile project workshop &amp; sprint board. Manage active sprints, drag-and-drop task cards, Epics, and team assignments.
+            Agile project workspace &amp; sprint board. Manage active sprints, drag-and-drop task cards, Epics, and team assignments.
           </p>
         </div>
 

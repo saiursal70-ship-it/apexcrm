@@ -246,7 +246,7 @@ const Settings = () => {
   };
 
   const navItems = [
-    { id: 'admin-workspace', label: 'Workshop ⚡', icon: 'grid', desc: 'Agile Sprint Board & Team Workshop' },
+    { id: 'admin-workspace', label: 'Workspace ⚡', icon: 'grid', desc: 'Agile Sprint Board & Team Workspace' },
     { id: 'users-rbac', label: 'Users & RBAC 🛡️', icon: 'shield', desc: 'Role designation & department settings' },
     { id: 'profile', label: 'My Profile', icon: 'user', desc: 'Edit personal details and role' },
     { id: 'company', label: 'Company Profile', icon: 'building', desc: 'Manage company & GST details' },
@@ -1249,8 +1249,8 @@ const Settings = () => {
               <div className="section-header" style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
-                    <h2>Workshop</h2>
-                    <p>Agile project workshop &amp; sprint board. Manage active sprints, drag-and-drop task cards, Epics, and team assignments.</p>
+                    <h2>Workspace</h2>
+                    <p>Agile project workspace &amp; sprint board. Manage active sprints, drag-and-drop task cards, Epics, and team assignments.</p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span className="admin-status-badge">⚡ ADMIN ACCESS GRANTED</span>
