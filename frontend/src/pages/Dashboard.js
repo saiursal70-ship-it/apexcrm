@@ -492,14 +492,14 @@ const Dashboard = () => {
 
             <div className="donut-chart-layout">
               <div className="donut-wrapper">
-                <ResponsiveContainer width="100%" height={210}>
+                <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
                     <Pie
                       data={revenueSourceData}
                       dataKey="value"
                       nameKey="name"
-                      innerRadius={62}
-                      outerRadius={92}
+                      innerRadius={50}
+                      outerRadius={75}
                       paddingAngle={3}
                     >
                       {revenueSourceData.map((entry, index) => (
