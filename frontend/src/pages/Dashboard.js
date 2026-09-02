@@ -185,18 +185,24 @@ const Dashboard = () => {
     }
   }, [loading, stats]);
 
-  // Modal open animation & keyboard shortcut
+  // Modal open animation, background lock & keyboard shortcut
   useEffect(() => {
     if (quickModal) {
+      document.body.style.overflow = 'hidden';
       animateModalEnter('.quick-modal', '.quick-modal-overlay');
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          setQuickModal(null);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
     }
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && quickModal) {
-        setQuickModal(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [quickModal]);
 
   const openQuickModal = (type, e) => {

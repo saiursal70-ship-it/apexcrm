@@ -5,7 +5,7 @@ const navConfig = [
   { path: '/contacts', label: 'Contacts', icon: 'contact', description: 'Keep every customer relationship organized and accessible.' },
   { path: '/accounts', label: 'Accounts', icon: 'building', description: 'Manage client companies, organization profiles, and account owners.' },
   { path: '/deals', label: 'Deals', icon: 'target', description: 'Track opportunities from first contact to successful close.' },
-  { path: '/admin/workspace', label: 'Admin Board', icon: 'grid', description: 'Control users, permissions, and your CRM workspace.' },
+  { path: '/admin/workspace', label: 'Workshop', icon: 'grid', description: 'Agile sprint board, task cards, and team workshop.' },
   { path: '/tasks', label: 'Tasks', icon: 'check', description: 'Plan your work, manage priorities, and get things done.' },
   { path: '/appointments', label: 'Appointments', icon: 'calendar', description: 'Schedule meetings and stay connected with your customers.' },
   { path: '/products', label: 'Products', icon: 'box', description: 'Catalog your products, services, pricing, and tax rates.' },

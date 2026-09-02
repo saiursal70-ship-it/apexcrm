@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import Icon from './Icon';
 import { sendWhatsAppApi, sendEmailApi, getAll } from '../api/api';
 import { animateModalEnter } from '../utils/animations';
+import { useTheme } from '../context/ThemeContext';
 
 // Helper to format phone number to international format
 export const formatPhoneNumber = (phone) => {
@@ -36,6 +37,9 @@ const OmnichannelMessageModal = ({
   entity = 'contacts',
   defaultChannel = 'whatsapp' // 'whatsapp' | 'email'
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [activeChannel, setActiveChannel] = useState(defaultChannel || 'whatsapp');
   const [sendMode, setSendMode] = useState('web'); // 'web' (WhatsApp Web / Gmail Compose) | 'api' (Direct In-App Dispatch) | 'schedule'
   const [loading, setLoading] = useState(false);
@@ -513,6 +517,86 @@ const OmnichannelMessageModal = ({
 
   if (!isOpen) return null;
 
+  const colors = isDark ? {
+    overlayBg: 'rgba(15, 23, 42, 0.75)',
+    cardBg: '#0f172a',
+    cardBorder: '1px solid rgba(148, 163, 184, 0.2)',
+    headerBg: 'rgba(30, 41, 59, 0.7)',
+    headerBorder: '1px solid rgba(255, 255, 255, 0.1)',
+    tabBarBg: 'rgba(15, 23, 42, 0.8)',
+    tabBarBorder: '1px solid rgba(255, 255, 255, 0.1)',
+    footerBg: 'rgba(30, 41, 59, 0.8)',
+    footerBorder: '1px solid rgba(255, 255, 255, 0.1)',
+    titleColor: '#f8fafc',
+    subtextColor: '#94a3b8',
+    labelColor: '#94a3b8',
+    inputBg: 'rgba(30, 41, 59, 0.8)',
+    inputBorder: '1px solid rgba(255, 255, 255, 0.15)',
+    inputColor: '#f8fafc',
+    disabledInputBg: 'rgba(15, 23, 42, 0.5)',
+    disabledInputBorder: '1px solid rgba(255, 255, 255, 0.1)',
+    disabledInputColor: '#94a3b8',
+    textareaBg: 'rgba(30, 41, 59, 0.9)',
+    textareaBorder: '1px solid rgba(255, 255, 255, 0.2)',
+    textareaColor: '#f8fafc',
+    tagBg: 'rgba(255, 255, 255, 0.06)',
+    tagBorder: '1px solid rgba(255, 255, 255, 0.15)',
+    tagColor: '#94a3b8',
+    tmplBg: 'rgba(30, 41, 59, 0.6)',
+    tmplBorder: '1px solid rgba(255, 255, 255, 0.1)',
+    tmplColor: '#cbd5e1',
+    boxBg: 'rgba(30, 41, 59, 0.5)',
+    boxBorder: '1px solid rgba(255, 255, 255, 0.1)',
+    radioColor: '#cbd5e1',
+    cancelBtnBg: 'rgba(255, 255, 255, 0.08)',
+    cancelBtnBorder: '1px solid rgba(255, 255, 255, 0.2)',
+    cancelBtnColor: '#cbd5e1',
+    defaultMailBg: 'rgba(255, 255, 255, 0.1)',
+    defaultMailBorder: '1px solid rgba(255, 255, 255, 0.25)',
+    defaultMailColor: '#f8fafc',
+    closeBtnBg: 'rgba(255, 255, 255, 0.08)',
+    closeBtnColor: '#94a3b8'
+  } : {
+    overlayBg: 'rgba(15, 23, 42, 0.6)',
+    cardBg: '#ffffff',
+    cardBorder: '1px solid #e2e8f0',
+    headerBg: '#f8fafc',
+    headerBorder: '1px solid #e2e8f0',
+    tabBarBg: '#f1f5f9',
+    tabBarBorder: '1px solid #e2e8f0',
+    footerBg: '#f8fafc',
+    footerBorder: '1px solid #e2e8f0',
+    titleColor: '#0f172a',
+    subtextColor: '#64748b',
+    labelColor: '#475569',
+    inputBg: '#ffffff',
+    inputBorder: '1px solid #cbd5e1',
+    inputColor: '#0f172a',
+    disabledInputBg: '#f1f5f9',
+    disabledInputBorder: '1px solid #e2e8f0',
+    disabledInputColor: '#64748b',
+    textareaBg: '#ffffff',
+    textareaBorder: '1px solid #cbd5e1',
+    textareaColor: '#0f172a',
+    tagBg: '#f1f5f9',
+    tagBorder: '1px solid #cbd5e1',
+    tagColor: '#334155',
+    tmplBg: '#f8fafc',
+    tmplBorder: '1px solid #e2e8f0',
+    tmplColor: '#334155',
+    boxBg: '#f8fafc',
+    boxBorder: '1px solid #e2e8f0',
+    radioColor: '#334155',
+    cancelBtnBg: '#f1f5f9',
+    cancelBtnBorder: '1px solid #cbd5e1',
+    cancelBtnColor: '#334155',
+    defaultMailBg: '#f1f5f9',
+    defaultMailBorder: '1px solid #cbd5e1',
+    defaultMailColor: '#0f172a',
+    closeBtnBg: '#f1f5f9',
+    closeBtnColor: '#64748b'
+  };
+
   return ReactDOM.createPortal(
     <div
       className="modal-overlay"
@@ -521,7 +605,7 @@ const OmnichannelMessageModal = ({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.7)',
+        backgroundColor: colors.overlayBg,
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
         zIndex: 99995,
@@ -539,11 +623,13 @@ const OmnichannelMessageModal = ({
           width: '100%',
           maxWidth: '680px',
           maxHeight: '92vh',
-          background: '#0f172a',
-          color: '#f8fafc',
-          border: '1px solid rgba(148, 163, 184, 0.2)',
+          background: colors.cardBg,
+          color: colors.titleColor,
+          border: colors.cardBorder,
           borderRadius: '18px',
-          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(37, 99, 235, 0.15)',
+          boxShadow: isDark
+            ? '0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(37, 99, 235, 0.15)'
+            : '0 25px 60px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.06)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden'
@@ -552,8 +638,8 @@ const OmnichannelMessageModal = ({
         {/* Modal Top Header */}
         <div style={{
           padding: '18px 24px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          background: 'rgba(30, 41, 59, 0.7)',
+          borderBottom: colors.headerBorder,
+          background: colors.headerBg,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -575,11 +661,11 @@ const OmnichannelMessageModal = ({
             </div>
 
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+              <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: colors.titleColor, letterSpacing: '-0.02em' }}>
                 Follow-up &amp; Forward Message
               </h2>
-              <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
-                To: <strong style={{ color: '#f8fafc' }}>{recipientName}</strong> • {companyName}
+              <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: colors.subtextColor }}>
+                To: <strong style={{ color: colors.titleColor }}>{recipientName}</strong> • {companyName}
               </p>
             </div>
           </div>
@@ -589,10 +675,10 @@ const OmnichannelMessageModal = ({
             type="button"
             onClick={handleClose}
             style={{
-              background: 'rgba(255, 255, 255, 0.08)',
+              background: colors.closeBtnBg,
               border: 'none',
               borderRadius: '8px',
-              color: '#94a3b8',
+              color: colors.closeBtnColor,
               cursor: 'pointer',
               padding: '6px 8px',
               display: 'flex',
@@ -608,8 +694,8 @@ const OmnichannelMessageModal = ({
         <div style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          background: 'rgba(15, 23, 42, 0.8)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+          background: colors.tabBarBg,
+          borderBottom: colors.tabBarBorder
         }}>
           <button
             type="button"
@@ -617,9 +703,9 @@ const OmnichannelMessageModal = ({
             style={{
               padding: '12px',
               border: 'none',
-              background: activeChannel === 'whatsapp' ? 'rgba(37, 211, 102, 0.12)' : 'transparent',
+              background: activeChannel === 'whatsapp' ? (isDark ? 'rgba(37, 211, 102, 0.12)' : 'rgba(37, 211, 102, 0.14)') : 'transparent',
               borderBottom: activeChannel === 'whatsapp' ? '2.5px solid #25d366' : '2.5px solid transparent',
-              color: activeChannel === 'whatsapp' ? '#25d366' : '#94a3b8',
+              color: activeChannel === 'whatsapp' ? '#16a34a' : colors.subtextColor,
               fontWeight: 700,
               fontSize: '0.88rem',
               display: 'flex',
@@ -640,9 +726,9 @@ const OmnichannelMessageModal = ({
             style={{
               padding: '12px',
               border: 'none',
-              background: activeChannel === 'email' ? 'rgba(239, 68, 68, 0.12)' : 'transparent',
+              background: activeChannel === 'email' ? (isDark ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.14)') : 'transparent',
               borderBottom: activeChannel === 'email' ? '2.5px solid #ef4444' : '2.5px solid transparent',
-              color: activeChannel === 'email' ? '#f87171' : '#94a3b8',
+              color: activeChannel === 'email' ? '#dc2626' : colors.subtextColor,
               fontWeight: 700,
               fontSize: '0.88rem',
               display: 'flex',
@@ -673,7 +759,7 @@ const OmnichannelMessageModal = ({
               borderRadius: '10px',
               padding: '12px 16px',
               marginBottom: 16,
-              color: deliveryResult.success ? '#34d399' : '#f87171',
+              color: deliveryResult.success ? '#15803d' : '#b91c1c',
               fontSize: '0.85rem',
               fontWeight: 600,
               display: 'flex',
@@ -684,7 +770,7 @@ const OmnichannelMessageModal = ({
               <button
                 type="button"
                 onClick={() => setDeliveryResult(null)}
-                style={{ background: 'none', border: 'none', color: deliveryResult.success ? '#34d399' : '#f87171', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: deliveryResult.success ? '#15803d' : '#b91c1c', cursor: 'pointer' }}
               >
                 ✕
               </button>
@@ -693,7 +779,7 @@ const OmnichannelMessageModal = ({
 
           {/* Quick Smart Template Selector */}
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', marginBottom: 8, letterSpacing: '0.04em' }}>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: colors.labelColor, marginBottom: 8, letterSpacing: '0.04em' }}>
               🎯 Select Follow-Up &amp; Intake Template ({entity.toUpperCase()}):
             </label>
             <div style={{
@@ -709,11 +795,11 @@ const OmnichannelMessageModal = ({
                     type="button"
                     onClick={() => handleSelectTemplate(tmpl)}
                     style={{
-                      background: isSelected ? 'rgba(37, 99, 235, 0.22)' : 'rgba(30, 41, 59, 0.6)',
-                      border: isSelected ? '1.5px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.1)',
+                      background: isSelected ? (isDark ? 'rgba(37, 99, 235, 0.22)' : 'rgba(37, 99, 235, 0.12)') : colors.tmplBg,
+                      border: isSelected ? '1.5px solid #3b82f6' : colors.tmplBorder,
                       borderRadius: '8px',
                       padding: '8px 10px',
-                      color: isSelected ? '#93c5fd' : '#cbd5e1',
+                      color: isSelected ? '#2563eb' : colors.tmplColor,
                       fontSize: '0.78rem',
                       fontWeight: 600,
                       textAlign: 'left',
@@ -742,7 +828,7 @@ const OmnichannelMessageModal = ({
             {activeChannel === 'whatsapp' ? (
               <>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: colors.labelColor, marginBottom: 4 }}>
                     WhatsApp Phone (with Country Code):
                   </label>
                   <input
@@ -753,10 +839,10 @@ const OmnichannelMessageModal = ({
                     style={{
                       width: '100%',
                       padding: '8px 12px',
-                      background: 'rgba(30, 41, 59, 0.8)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      background: colors.inputBg,
+                      border: colors.inputBorder,
                       borderRadius: '8px',
-                      color: '#f8fafc',
+                      color: colors.inputColor,
                       fontSize: '0.86rem',
                       boxSizing: 'border-box'
                     }}
@@ -764,7 +850,7 @@ const OmnichannelMessageModal = ({
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: colors.labelColor, marginBottom: 4 }}>
                     Recipient Name:
                   </label>
                   <input
@@ -774,10 +860,10 @@ const OmnichannelMessageModal = ({
                     style={{
                       width: '100%',
                       padding: '8px 12px',
-                      background: 'rgba(15, 23, 42, 0.5)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: colors.disabledInputBg,
+                      border: colors.disabledInputBorder,
                       borderRadius: '8px',
-                      color: '#94a3b8',
+                      color: colors.disabledInputColor,
                       fontSize: '0.86rem',
                       boxSizing: 'border-box'
                     }}
@@ -787,7 +873,7 @@ const OmnichannelMessageModal = ({
             ) : (
               <>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: colors.labelColor, marginBottom: 4 }}>
                     To (Recipient Email Address):
                   </label>
                   <input
@@ -798,10 +884,10 @@ const OmnichannelMessageModal = ({
                     style={{
                       width: '100%',
                       padding: '8px 12px',
-                      background: 'rgba(30, 41, 59, 0.8)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      background: colors.inputBg,
+                      border: colors.inputBorder,
                       borderRadius: '8px',
-                      color: '#f8fafc',
+                      color: colors.inputColor,
                       fontSize: '0.86rem',
                       boxSizing: 'border-box'
                     }}
@@ -809,7 +895,7 @@ const OmnichannelMessageModal = ({
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: colors.labelColor, marginBottom: 4 }}>
                     Subject Line:
                   </label>
                   <input
@@ -820,10 +906,10 @@ const OmnichannelMessageModal = ({
                     style={{
                       width: '100%',
                       padding: '8px 12px',
-                      background: 'rgba(30, 41, 59, 0.8)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      background: colors.inputBg,
+                      border: colors.inputBorder,
                       borderRadius: '8px',
-                      color: '#f8fafc',
+                      color: colors.inputColor,
                       fontSize: '0.86rem',
                       boxSizing: 'border-box'
                     }}
@@ -836,7 +922,7 @@ const OmnichannelMessageModal = ({
           {/* Message Content Area */}
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.04em' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: colors.labelColor, letterSpacing: '0.04em' }}>
                 {activeChannel === 'whatsapp' ? 'WhatsApp Message Body:' : 'Email Body:'}
               </label>
 
@@ -846,7 +932,7 @@ const OmnichannelMessageModal = ({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: copied ? '#34d399' : '#60a5fa',
+                  color: copied ? '#16a34a' : '#2563eb',
                   fontSize: '0.75rem',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -867,10 +953,10 @@ const OmnichannelMessageModal = ({
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                background: 'rgba(30, 41, 59, 0.9)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
+                background: colors.textareaBg,
+                border: colors.textareaBorder,
                 borderRadius: '10px',
-                color: '#f8fafc',
+                color: colors.textareaColor,
                 fontSize: '0.86rem',
                 lineHeight: 1.5,
                 boxSizing: 'border-box',
@@ -882,19 +968,19 @@ const OmnichannelMessageModal = ({
 
           {/* Quick Variable Insertion Tags */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
-            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Insert Tags:</span>
+            <span style={{ fontSize: '0.72rem', color: colors.subtextColor, fontWeight: 600 }}>Insert Tags:</span>
             {[`{name}`, `{company}`, `{amount}`, `{invoice_number}`, `{quotation_number}`, `{due_date}`].map((tag) => (
               <button
                 key={tag}
                 type="button"
                 onClick={() => handleInsertTag(tag)}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: colors.tagBg,
+                  border: colors.tagBorder,
                   borderRadius: '6px',
                   padding: '2px 8px',
                   fontSize: '0.7rem',
-                  color: '#94a3b8',
+                  color: colors.tagColor,
                   cursor: 'pointer'
                 }}
               >
@@ -905,18 +991,18 @@ const OmnichannelMessageModal = ({
 
           {/* Dispatch Mode Selector */}
           <div style={{
-            background: 'rgba(30, 41, 59, 0.5)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: colors.boxBg,
+            border: colors.boxBorder,
             borderRadius: '10px',
             padding: '12px 16px',
             marginBottom: 16
           }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', display: 'block', marginBottom: 8 }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: colors.labelColor, display: 'block', marginBottom: 8 }}>
               Dispatch Channel Mode:
             </span>
 
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: colors.radioColor, cursor: 'pointer' }}>
                 <input
                   type="radio"
                   name="dispatchMode"
@@ -926,7 +1012,7 @@ const OmnichannelMessageModal = ({
                 <span>1-Click {activeChannel === 'whatsapp' ? 'WhatsApp Web' : 'Gmail Web Compose'}</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: colors.radioColor, cursor: 'pointer' }}>
                 <input
                   type="radio"
                   name="dispatchMode"
@@ -936,7 +1022,7 @@ const OmnichannelMessageModal = ({
                 <span>🤖 In-App Automated Gateway Send</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#cbd5e1', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: colors.radioColor, cursor: 'pointer' }}>
                 <input
                   type="radio"
                   name="dispatchMode"
@@ -956,9 +1042,9 @@ const OmnichannelMessageModal = ({
                   style={{
                     padding: '6px 10px',
                     borderRadius: '6px',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    background: '#0f172a',
-                    color: '#f8fafc',
+                    border: colors.inputBorder,
+                    background: colors.inputBg,
+                    color: colors.inputColor,
                     fontSize: '0.82rem'
                   }}
                 />
@@ -986,8 +1072,8 @@ const OmnichannelMessageModal = ({
         {/* Modal Action Footer */}
         <div style={{
           padding: '16px 24px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-          background: 'rgba(30, 41, 59, 0.8)',
+          borderTop: colors.footerBorder,
+          background: colors.footerBg,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -999,9 +1085,9 @@ const OmnichannelMessageModal = ({
             className="btn btn-secondary"
             onClick={handleClose}
             style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              color: '#cbd5e1',
+              background: colors.cancelBtnBg,
+              border: colors.cancelBtnBorder,
+              color: colors.cancelBtnColor,
               borderRadius: '8px',
               padding: '9px 18px',
               fontSize: '0.86rem',
@@ -1068,9 +1154,9 @@ const OmnichannelMessageModal = ({
                   type="button"
                   onClick={handleLaunchMailto}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    color: '#f8fafc',
+                    background: colors.defaultMailBg,
+                    border: colors.defaultMailBorder,
+                    color: colors.defaultMailColor,
                     borderRadius: '8px',
                     padding: '10px 16px',
                     fontSize: '0.86rem',

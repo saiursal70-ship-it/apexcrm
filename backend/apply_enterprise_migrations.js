@@ -106,6 +106,78 @@ async function runEnterpriseMigrations() {
             console.log('✅ Seeded default workspace container types (6 items)');
         }
 
+        // 6. Create Clients table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS clients (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                client_code VARCHAR(50) NOT NULL,
+                client_name VARCHAR(150) NOT NULL,
+                workspace VARCHAR(150) DEFAULT '',
+                email VARCHAR(150) DEFAULT '',
+                phone VARCHAR(50) DEFAULT '',
+                status VARCHAR(30) DEFAULT 'Active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP NULL DEFAULT NULL
+            )
+        `);
+        console.log('✅ Created or verified table: clients (enterprise)');
+
+        const [clRows] = await db.query('SELECT COUNT(*) as count FROM clients');
+        if (clRows[0].count === 0) {
+            await db.query(`
+                INSERT INTO clients (client_code, client_name, workspace, email, status) VALUES
+                ('CL-ABC', 'ABC Corporation', 'Development', 'contact@abccorp.com', 'Active')
+            `);
+            console.log('✅ Seeded default client (CL-ABC)');
+        }
+
+        // 7. Create Projects table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS projects (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                project_code VARCHAR(50) NOT NULL,
+                project_name VARCHAR(150) NOT NULL,
+                workspace VARCHAR(150) DEFAULT '',
+                status VARCHAR(30) DEFAULT 'In Progress',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP NULL DEFAULT NULL
+            )
+        `);
+        console.log('✅ Created or verified table: projects');
+
+        const [pjRows] = await db.query('SELECT COUNT(*) as count FROM projects');
+        if (pjRows[0].count === 0) {
+            await db.query(`
+                INSERT INTO projects (project_code, project_name, workspace, status) VALUES
+                ('PRJ-GRAVITY', 'Beyond Gravity', 'Development', 'In Progress')
+            `);
+            console.log('✅ Seeded default project (PRJ-GRAVITY)');
+        }
+
+        // 8. Create Boards table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS boards (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                board_code VARCHAR(50) NOT NULL,
+                board_name VARCHAR(150) NOT NULL,
+                project VARCHAR(150) DEFAULT '',
+                board_type VARCHAR(50) DEFAULT 'Agile Board',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP NULL DEFAULT NULL
+            )
+        `);
+        console.log('✅ Created or verified table: boards');
+
+        const [brRows] = await db.query('SELECT COUNT(*) as count FROM boards');
+        if (brRows[0].count === 0) {
+            await db.query(`
+                INSERT INTO boards (board_code, board_name, project, board_type) VALUES
+                ('BRD-SPRINT', 'Main Agile Sprint Board', 'Beyond Gravity', 'Agile Board'),
+                ('BRD-BUGFIX', 'Triage & Bug Tracker Board', 'Beyond Gravity', 'Bug Tracker')
+            `);
+            console.log('✅ Seeded default boards (2 items)');
+        }
+
         // 4. Create High-Performance Composite B-Tree Indexes
         const indexQueries = [
             { table: 'deals', name: 'idx_deals_stage_value', query: 'ALTER TABLE deals ADD INDEX idx_deals_stage_value (stage, value)' },

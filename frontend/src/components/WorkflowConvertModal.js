@@ -12,6 +12,7 @@ import {
   bulkConvertLeadsWorkflow
 } from '../api/api';
 import { animateModalEnter } from '../utils/animations';
+import { useTheme } from '../context/ThemeContext';
 
 const WorkflowConvertModal = ({
   isOpen,
@@ -20,6 +21,7 @@ const WorkflowConvertModal = ({
   record,
   onSuccess
 }) => {
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({});
@@ -38,9 +40,9 @@ const WorkflowConvertModal = ({
       case 'quote_to_invoice':
         return { path: '/invoices', label: 'Invoices & Payments' };
       case 'invoice_to_project':
-        return { path: '/settings', label: 'Admin Workspace' };
+        return { path: '/tasks', label: 'Tasks' };
       case 'complete_delivery':
-        return { path: '/tickets', label: 'Support & Helpdesk' };
+        return { path: '/tasks', label: 'Tasks' };
       default:
         return { path: '/dashboard', label: 'Dashboard' };
     }
@@ -49,79 +51,106 @@ const WorkflowConvertModal = ({
   const handleDoneAndView = useCallback(() => {
     const next = getNextRoute();
     onClose();
-    if (next?.path) {
-      navigate(next.path);
-    }
+    navigate(next.path);
   }, [getNextRoute, onClose, navigate]);
 
   useEffect(() => {
-    if (isOpen && record) {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
       setSuccessResult(null);
       animateModalEnter(modalRef.current, overlayRef.current);
 
-      if (type === 'convert_lead') {
+      // Pre-fill form data based on workflow type
+      if (type === 'convert_lead' && record) {
         setFormData({
           lead_id: record.id,
-          contact_name: record.lead_name || '',
-          company_name: record.company_name || `${record.lead_name || 'Client'}'s Company`,
-          email: record.email || '',
-          phone: record.phone || '',
-          designation: 'Decision Maker / Owner',
-          industry: 'Technology & Services',
-          deal_name: `${record.company_name || record.lead_name || 'Client'} - ${record.interested_in || 'Enterprise CRM'}`,
-          deal_value: 350000,
-          create_deal: true,
-          create_task: true
+          contact_name: record.name || '',
+          contact_email: record.email || '',
+          contact_phone: record.phone || '',
+          company_name: record.company || `${record.name || 'Lead'} Enterprise`,
+          deal_name: `${record.company || record.name || 'Opportunity'} - Core Service`,
+          deal_value: record.budget || record.value || 500000,
+          create_task: true,
+          assignee_id: record.assigned_to || 1
         });
-      } else if (type === 'deal_to_quote') {
+      } else if (type === 'deal_to_quote' && record) {
         setFormData({
           deal_id: record.id,
-          client_name: record.account_name || 'Valued Client',
-          project_title: record.deal_name || 'Enterprise Project Solution',
-          total_amount: Number(record.value || 250000),
-          terms: '50% Advance on project kickoff, 50% upon final milestone delivery and UAT sign-off. GST 18% extra.'
+          title: `Quotation for ${record.name || record.title || 'Deal'}`,
+          client_id: record.client_id || record.account_id || 1,
+          total_amount: record.value || record.amount || 250000,
+          tax_amount: (Number(record.value || record.amount || 250000) * 0.18),
+          grand_total: (Number(record.value || record.amount || 250000) * 1.18),
+          valid_until: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+          terms: 'Standard net 30 days. Delivery starts upon initial PO sign-off.'
         });
-      } else if (type === 'quote_to_invoice') {
+      } else if (type === 'deal_to_invoice' && record) {
+        setFormData({
+          deal_id: record.id,
+          title: `Tax Invoice for ${record.name || record.title || 'Deal'}`,
+          client_id: record.client_id || record.account_id || 1,
+          total_amount: record.value || record.amount || 250000,
+          tax_amount: (Number(record.value || record.amount || 250000) * 0.18),
+          grand_total: (Number(record.value || record.amount || 250000) * 1.18),
+          due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+          notes: 'Invoice generated directly from closed pipeline deal.'
+        });
+      } else if (type === 'quote_to_invoice' && record) {
         setFormData({
           quotation_id: record.id,
-          client_name: record.client_name || 'Client Name',
-          total_amount: Number(record.total_amount || 250000)
+          title: `Invoice #${record.quotation_number || record.id} - ${record.title || 'Approved Quote'}`,
+          client_id: record.client_id || 1,
+          total_amount: record.total_amount || 250000,
+          tax_amount: record.tax_amount || (Number(record.total_amount || 250000) * 0.18),
+          grand_total: record.grand_total || (Number(record.total_amount || 250000) * 1.18),
+          due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+          notes: 'Automated invoice generated from approved quotation.'
         });
-      } else if (type === 'invoice_to_project') {
+      } else if (type === 'invoice_to_project' && record) {
         setFormData({
           invoice_id: record.id,
-          client_name: record.client_account || 'Client Project',
-          project_name: `${record.client_account || 'Enterprise'} Implementation`
+          name: `Project: ${record.title || record.invoice_number || 'New Engagement'}`,
+          client_id: record.client_id || 1,
+          budget: record.total_amount || record.grand_total || 250000,
+          start_date: new Date().toISOString().slice(0, 10),
+          end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+          status: 'Active',
+          description: `Kickoff generated automatically from paid invoice #${record.invoice_number || record.id}.`
         });
-      } else if (type === 'complete_delivery') {
+      } else if (type === 'complete_delivery' && record) {
         setFormData({
-          project_name: record.project_name || 'Beyond Gravity',
-          client_name: record.client_name || record.project_name || 'Valued Client'
-        });
-      } else if (type === 'deal_to_invoice') {
-        setFormData({
-          deal_id: record.id,
-          client_name: record.account_name || 'Valued Client',
-          invoice_amount: Number(record.value || 250000),
-          payment_mode: 'Bank Transfer',
-          due_days: 15
+          project_id: record.id,
+          resolution_notes: `Delivery milestone successfully verified and handed over for ${record.name || 'Project'}.`,
+          create_support_ticket: true,
+          satisfaction_score: 5
         });
       } else if (type === 'bulk_convert_leads') {
         setFormData({
-          lead_ids: Array.isArray(record) ? record.map((r) => r.id) : []
+          default_deal_value: 350000,
+          auto_create_tasks: true
         });
       }
+    } else {
+      document.body.style.overflow = '';
     }
-  }, [isOpen, record, type]);
+  }, [isOpen, type, record]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          onClose();
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
   }, [isOpen, onClose]);
 
   if (!isOpen || (!record && type !== 'bulk_convert_leads')) return null;
@@ -170,76 +199,88 @@ const WorkflowConvertModal = ({
           badge: 'STAGE 1 ➔ STAGE 2',
           badgeColor: '#3b82f6',
           description: 'Convert this lead into a permanent Contact, Account, and Qualified Pipeline Deal in one shot.',
-          btnText: 'Convert Lead Now'
-        };
-      case 'bulk_convert_leads':
-        return {
-          title: '⚡ Mass Lead ➔ Contacts & Deals Conversion',
-          badge: 'BULK AUTOMATION',
-          badgeColor: '#6366f1',
-          description: 'Instantly convert un-converted leads into verified Contacts, Accounts, Active Deals & Follow-up Tasks in one click.',
-          btnText: 'Convert All Leads Now'
+          submitLabel: 'Convert Lead to Deal & Account'
         };
       case 'deal_to_quote':
         return {
-          title: '📄 Generate Commercial Quotation',
-          badge: 'STAGE 2: SALES',
-          badgeColor: '#10b981',
-          description: 'Create an official Commercial Quotation with GST tax calculations and proposal terms.',
-          btnText: 'Generate Quotation'
+          title: '📄 Generate Official Quotation',
+          badge: 'STAGE 2 ➔ STAGE 3',
+          badgeColor: '#8b5cf6',
+          description: 'Create a GST-compliant commercial quotation directly from this active deal.',
+          submitLabel: 'Generate & Lock Quotation'
         };
       case 'deal_to_invoice':
         return {
-          title: '🧾 Won Deal ➔ Generate Tax Invoice',
-          badge: 'STAGE 2: SALES ➔ FINANCE',
+          title: '💳 Generate Direct Tax Invoice',
+          badge: 'DEAL ➔ INVOICE',
           badgeColor: '#10b981',
-          description: 'Mark this deal as Closed Won (100% Probability) and issue an official Tax Invoice immediately.',
-          btnText: 'Generate Tax Invoice'
+          description: 'Issue an immediate billing invoice from this closed/won opportunity.',
+          submitLabel: 'Generate Tax Invoice'
         };
       case 'quote_to_invoice':
         return {
-          title: '🧾 Approve & Generate Tax Invoice',
-          badge: 'STAGE 2: FINANCE',
-          badgeColor: '#f59e0b',
-          description: 'Approve this quotation, mark linked Deal as Closed Won, and issue a formal Tax Invoice.',
-          btnText: 'Approve & Issue Invoice'
+          title: '💳 Approve Quote & Issue Invoice',
+          badge: 'STAGE 3 ➔ STAGE 4',
+          badgeColor: '#10b981',
+          description: 'Mark this quotation as Approved and generate a numbered tax invoice automatically.',
+          submitLabel: 'Approve & Issue Invoice'
         };
       case 'invoice_to_project':
         return {
-          title: '🚀 Launch Project Workspace',
-          badge: 'STAGE 3: OPERATIONS',
-          badgeColor: '#8b5cf6',
-          description: 'Provision Sprint Tasks on the Agile Kanban Board and set payment to Paid.',
-          btnText: 'Launch Project Workspace'
+          title: '🚀 Launch Execution Project',
+          badge: 'STAGE 4 ➔ STAGE 5',
+          badgeColor: '#f59e0b',
+          description: 'Kick off delivery operations and populate team tasks for this paid invoice.',
+          submitLabel: 'Kick Off Delivery Project'
         };
       case 'complete_delivery':
         return {
-          title: '🎉 Complete Delivery & Setup Support/AMC',
-          badge: 'STAGE 4: CLIENT SUCCESS',
+          title: '🏆 Mark Delivery & Handover Complete',
+          badge: 'STAGE 5 ➔ STAGE 6',
           badgeColor: '#ec4899',
-          description: 'Mark project deliverables as DONE, open a warranty Support Ticket, and schedule 1-Year AMC Renewal.',
-          btnText: 'Complete Delivery & Setup AMC'
+          description: 'Complete project delivery, archive sprint tasks, and open a post-delivery support SLA ticket.',
+          submitLabel: 'Complete Project Delivery'
+        };
+      case 'bulk_convert_leads':
+        return {
+          title: '⚡ Bulk Convert All Unconverted Leads',
+          badge: 'MASS AUTOMATION',
+          badgeColor: '#3b82f6',
+          description: 'Process all qualified leads in your pipeline into Contacts, Accounts, and Deals simultaneously.',
+          submitLabel: 'Execute Mass Conversion'
         };
       default:
         return {
-          title: 'Workflow Action',
+          title: '⚡ Workflow Automation',
           badge: 'WORKFLOW',
-          badgeColor: '#6366f1',
-          description: 'Execute automated workflow transition.',
-          btnText: 'Execute'
+          badgeColor: '#2563eb',
+          description: 'Execute the next stage in this business pipeline.',
+          submitLabel: 'Execute Stage'
         };
     }
   };
 
   const meta = getModalMeta();
 
+  // Dynamic Theme Tokens
+  const containerBg = isDark ? '#0f172a' : '#ffffff';
+  const headerBg = isDark ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99))' : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)';
+  const bodyBg = isDark ? '#0f172a' : '#ffffff';
+  const inputBg = isDark ? 'rgba(30, 41, 59, 0.7)' : '#f8fafc';
+  const inputBorder = isDark ? 'rgba(148, 163, 184, 0.25)' : '#cbd5e1';
+  const inputColor = isDark ? '#f8fafc' : '#0f172a';
+  const labelColor = isDark ? '#cbd5e1' : '#334155';
+  const titleColor = isDark ? '#f8fafc' : '#0f172a';
+  const subtextColor = isDark ? '#94a3b8' : '#64748b';
+  const borderColor = isDark ? 'rgba(148, 163, 184, 0.2)' : '#e2e8f0';
+
   // Unified input field styles for consistent look on all devices
   const inputStyle = {
     width: '100%',
-    background: 'rgba(30, 41, 59, 0.7)',
-    border: '1px solid rgba(148, 163, 184, 0.25)',
+    background: inputBg,
+    border: `1px solid ${inputBorder}`,
     borderRadius: '8px',
-    color: '#f8fafc',
+    color: inputColor,
     padding: '10px 14px',
     fontSize: '0.9rem',
     outline: 'none',
@@ -251,7 +292,7 @@ const WorkflowConvertModal = ({
     display: 'block',
     fontSize: '0.8rem',
     fontWeight: 600,
-    color: '#cbd5e1',
+    color: labelColor,
     marginBottom: '6px',
     letterSpacing: '0.01em'
   };
@@ -264,7 +305,7 @@ const WorkflowConvertModal = ({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(10, 15, 29, 0.82)',
+        backgroundColor: isDark ? 'rgba(10, 15, 29, 0.82)' : 'rgba(255, 255, 255, 0.6)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
         zIndex: 100000,
@@ -285,19 +326,20 @@ const WorkflowConvertModal = ({
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#0f172a',
+          backgroundColor: containerBg,
+          color: titleColor,
           borderRadius: '16px',
-          border: '1px solid rgba(148, 163, 184, 0.2)',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7)',
+          border: `1px solid ${borderColor}`,
+          boxShadow: isDark ? '0 25px 60px -15px rgba(0, 0, 0, 0.7)' : '0 20px 45px rgba(0, 0, 0, 0.12)',
           overflow: 'hidden',
           margin: 'auto'
         }}
       >
         {/* Sticky Header Bar */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99))',
+          background: headerBg,
           padding: '20px 24px',
-          borderBottom: '1px solid rgba(148, 163, 184, 0.15)',
+          borderBottom: `1px solid ${borderColor}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
@@ -318,10 +360,10 @@ const WorkflowConvertModal = ({
                 {meta.badge}
               </span>
             </div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: titleColor, letterSpacing: '-0.02em' }}>
               {meta.title}
             </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.4 }}>
+            <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: subtextColor, lineHeight: 1.4 }}>
               {meta.description}
             </p>
           </div>
@@ -330,10 +372,10 @@ const WorkflowConvertModal = ({
             type="button"
             onClick={onClose}
             style={{
-              background: 'rgba(255, 255, 255, 0.08)',
+              background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
               border: 'none',
               borderRadius: '8px',
-              color: '#94a3b8',
+              color: subtextColor,
               cursor: 'pointer',
               padding: '6px',
               display: 'flex',
@@ -354,7 +396,7 @@ const WorkflowConvertModal = ({
           overflowY: 'auto',
           flex: 1,
           maxHeight: 'calc(90vh - 150px)',
-          background: '#0f172a'
+          background: bodyBg
         }}>
           {successResult ? (
             <div style={{ textAlign: 'center', padding: '24px 12px' }}>
@@ -362,7 +404,7 @@ const WorkflowConvertModal = ({
                 width: 64,
                 height: 64,
                 borderRadius: '50%',
-                background: 'rgba(16, 185, 129, 0.2)',
+                background: isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.12)',
                 border: '2px solid rgba(16, 185, 129, 0.5)',
                 color: '#10b981',
                 display: 'flex',
@@ -375,10 +417,10 @@ const WorkflowConvertModal = ({
               }}>
                 ✓
               </div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 700, color: '#f8fafc', marginBottom: 8 }}>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 700, color: titleColor, marginBottom: 8 }}>
                 Workflow Completed Successfully!
               </h3>
-              <p style={{ fontSize: '0.88rem', color: '#94a3b8', maxWidth: 460, margin: '0 auto 20px', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.88rem', color: subtextColor, maxWidth: 460, margin: '0 auto 20px', lineHeight: 1.5 }}>
                 {successResult.message}
               </p>
 
@@ -430,22 +472,22 @@ const WorkflowConvertModal = ({
                     gap: 10,
                     marginBottom: 18
                   }}>
-                    <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 10, padding: '10px 12px' }}>
-                      <span style={{ fontSize: '0.68rem', color: '#60a5fa', fontWeight: 700, display: 'block' }}>1. CONTACT</span>
-                      <strong style={{ fontSize: '0.82rem', color: '#f8fafc', display: 'block', marginTop: 2, wordBreak: 'break-word' }}>{formData.contact_name}</strong>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Client Contact</span>
+                    <div style={{ background: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.08)', border: isDark ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid rgba(59, 130, 246, 0.2)', borderRadius: 10, padding: '10px 12px' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#3b82f6', fontWeight: 700, display: 'block' }}>1. CONTACT</span>
+                      <strong style={{ fontSize: '0.82rem', color: titleColor, display: 'block', marginTop: 2, wordBreak: 'break-word' }}>{formData.contact_name}</strong>
+                      <span style={{ fontSize: '0.7rem', color: subtextColor }}>Client Contact</span>
                     </div>
 
-                    <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 10, padding: '10px 12px' }}>
-                      <span style={{ fontSize: '0.68rem', color: '#34d399', fontWeight: 700, display: 'block' }}>2. COMPANY</span>
-                      <strong style={{ fontSize: '0.82rem', color: '#f8fafc', display: 'block', marginTop: 2, wordBreak: 'break-word' }}>{formData.company_name}</strong>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Account Profile</span>
+                    <div style={{ background: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.08)', border: isDark ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 10, padding: '10px 12px' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700, display: 'block' }}>2. COMPANY</span>
+                      <strong style={{ fontSize: '0.82rem', color: titleColor, display: 'block', marginTop: 2, wordBreak: 'break-word' }}>{formData.company_name}</strong>
+                      <span style={{ fontSize: '0.7rem', color: subtextColor }}>Account Profile</span>
                     </div>
 
-                    <div style={{ background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.25)', borderRadius: 10, padding: '10px 12px' }}>
-                      <span style={{ fontSize: '0.68rem', color: '#a78bfa', fontWeight: 700, display: 'block' }}>3. PIPELINE DEAL</span>
-                      <strong style={{ fontSize: '0.82rem', color: '#f8fafc', display: 'block', marginTop: 2 }}>₹{Number(formData.deal_value || 0).toLocaleString('en-IN')}</strong>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Stage: Qualified</span>
+                    <div style={{ background: isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.08)', border: isDark ? '1px solid rgba(139, 92, 246, 0.25)' : '1px solid rgba(139, 92, 246, 0.2)', borderRadius: 10, padding: '10px 12px' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#8b5cf6', fontWeight: 700, display: 'block' }}>3. PIPELINE DEAL</span>
+                      <strong style={{ fontSize: '0.82rem', color: titleColor, display: 'block', marginTop: 2 }}>₹{Number(formData.deal_value || 0).toLocaleString('en-IN')}</strong>
+                      <span style={{ fontSize: '0.7rem', color: subtextColor }}>Stage: Qualified</span>
                     </div>
                   </div>
 
@@ -483,8 +525,8 @@ const WorkflowConvertModal = ({
                     </div>
                   </div>
 
-                  <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '12px 14px', borderRadius: 8, marginTop: 6, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.82rem', color: '#e2e8f0', cursor: 'pointer', margin: 0 }}>
+                  <div style={{ background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc', padding: '12px 14px', borderRadius: 8, marginTop: 6, border: `1px solid ${borderColor}` }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.82rem', color: titleColor, cursor: 'pointer', margin: 0 }}>
                       <input
                         type="checkbox"
                         checked={formData.create_task ?? true}
@@ -544,15 +586,15 @@ const WorkflowConvertModal = ({
                     gap: 10,
                     marginBottom: 16
                   }}>
-                    <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 10, padding: '10px 12px' }}>
-                      <span style={{ fontSize: '0.68rem', color: '#34d399', fontWeight: 700, display: 'block' }}>STAGE UPDATE</span>
-                      <strong style={{ fontSize: '0.82rem', color: '#f8fafc', display: 'block', marginTop: 2 }}>Closed Won (100%)</strong>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Pipeline Won</span>
+                    <div style={{ background: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.08)', border: isDark ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 10, padding: '10px 12px' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700, display: 'block' }}>STAGE UPDATE</span>
+                      <strong style={{ fontSize: '0.82rem', color: titleColor, display: 'block', marginTop: 2 }}>Closed Won (100%)</strong>
+                      <span style={{ fontSize: '0.7rem', color: subtextColor }}>Pipeline Won</span>
                     </div>
-                    <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 10, padding: '10px 12px' }}>
-                      <span style={{ fontSize: '0.68rem', color: '#60a5fa', fontWeight: 700, display: 'block' }}>INVOICE TOTAL</span>
-                      <strong style={{ fontSize: '0.82rem', color: '#f8fafc', display: 'block', marginTop: 2 }}>₹{Number(formData.invoice_amount || 0).toLocaleString('en-IN')}</strong>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Tax Invoice</span>
+                    <div style={{ background: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.08)', border: isDark ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid rgba(59, 130, 246, 0.2)', borderRadius: 10, padding: '10px 12px' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#3b82f6', fontWeight: 700, display: 'block' }}>INVOICE TOTAL</span>
+                      <strong style={{ fontSize: '0.82rem', color: titleColor, display: 'block', marginTop: 2 }}>₹{Number(formData.invoice_amount || 0).toLocaleString('en-IN')}</strong>
+                      <span style={{ fontSize: '0.7rem', color: subtextColor }}>Tax Invoice</span>
                     </div>
                   </div>
 
@@ -598,9 +640,9 @@ const WorkflowConvertModal = ({
               {/* Type: Bulk Convert Leads */}
               {type === 'bulk_convert_leads' && (
                 <div>
-                  <div style={{ background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                    <h4 style={{ margin: '0 0 6px', color: '#818cf8', fontSize: '0.95rem' }}>⚡ 1-Click Mass Lead Conversion</h4>
-                    <p style={{ margin: 0, fontSize: '0.84rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+                  <div style={{ background: isDark ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.08)', border: isDark ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid rgba(99, 102, 241, 0.2)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                    <h4 style={{ margin: '0 0 6px', color: '#6366f1', fontSize: '0.95rem' }}>⚡ 1-Click Mass Lead Conversion</h4>
+                    <p style={{ margin: 0, fontSize: '0.84rem', color: subtextColor, lineHeight: 1.5 }}>
                       This automation will instantly process all un-converted leads in your pipeline, auto-create verified <strong>Contacts</strong>, company <strong>Accounts</strong>, active <strong>Pipeline Deals</strong> (₹3,50,000 in Qualified stage), and schedule immediate <strong>Discovery Call Tasks</strong>!
                     </p>
                   </div>
@@ -610,21 +652,21 @@ const WorkflowConvertModal = ({
               {/* Type: Quotation to Invoice */}
               {type === 'quote_to_invoice' && (
                 <div>
-                  <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                  <div style={{ background: isDark ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.08)', border: isDark ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(245, 158, 11, 0.2)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: '0.8rem', color: '#fbbf24', fontWeight: 600 }}>Quotation Reference:</span>
-                      <strong style={{ color: '#fff', fontSize: '0.88rem' }}>#{record.quotation_number || record.id}</strong>
+                      <span style={{ fontSize: '0.8rem', color: '#f59e0b', fontWeight: 600 }}>Quotation Reference:</span>
+                      <strong style={{ color: titleColor, fontSize: '0.88rem' }}>#{record.quotation_number || record.id}</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Client:</span>
-                      <strong style={{ color: '#fff', fontSize: '0.88rem' }}>{record.client_name}</strong>
+                      <span style={{ fontSize: '0.8rem', color: subtextColor }}>Client:</span>
+                      <strong style={{ color: titleColor, fontSize: '0.88rem' }}>{record.client_name}</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Total Amount:</span>
+                      <span style={{ fontSize: '0.8rem', color: subtextColor }}>Total Amount:</span>
                       <strong style={{ color: '#10b981', fontSize: '1rem' }}>₹{Number(record.total_amount || 0).toLocaleString('en-IN')}</strong>
                     </div>
                   </div>
-                  <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0, lineHeight: 1.45 }}>
+                  <p style={{ fontSize: '0.82rem', color: subtextColor, margin: 0, lineHeight: 1.45 }}>
                     Clicking below will set Quotation status to <strong>Accepted</strong>, update the Deal to <strong>Closed Won (100%)</strong>, and generate a printable <strong>Tax Invoice</strong>.
                   </p>
                 </div>
@@ -643,7 +685,7 @@ const WorkflowConvertModal = ({
                       required
                     />
                   </div>
-                  <p style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: 10, lineHeight: 1.45 }}>
+                  <p style={{ fontSize: '0.82rem', color: subtextColor, marginBottom: 10, lineHeight: 1.45 }}>
                     This will provision <strong>5 Agile Sprint Deliverables</strong> (Kickoff, Core Dev, Integrations, QA, Go-Live) on your Sprint Board.
                   </p>
                 </div>
@@ -652,9 +694,9 @@ const WorkflowConvertModal = ({
               {/* Type: Complete Delivery */}
               {type === 'complete_delivery' && (
                 <div>
-                  <div style={{ background: 'rgba(236, 72, 153, 0.1)', border: '1px solid rgba(236, 72, 153, 0.3)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-                    <h4 style={{ margin: '0 0 6px', color: '#f472b6', fontSize: '0.92rem' }}>Ready to deliver {formData.project_name}?</h4>
-                    <p style={{ margin: 0, fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.45 }}>
+                  <div style={{ background: isDark ? 'rgba(236, 72, 153, 0.1)' : 'rgba(236, 72, 153, 0.08)', border: isDark ? '1px solid rgba(236, 72, 153, 0.3)' : '1px solid rgba(236, 72, 153, 0.2)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                    <h4 style={{ margin: '0 0 6px', color: '#ec4899', fontSize: '0.92rem' }}>Ready to deliver {formData.project_name}?</h4>
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: subtextColor, lineHeight: 1.45 }}>
                       All active sprint tasks will be marked <strong>DONE</strong>, a 30-day onboarding <strong>Support Ticket</strong> will be assigned, and an <strong>Annual Maintenance Contract (AMC) Deal</strong> will be scheduled 1 year out.
                     </p>
                   </div>
@@ -668,33 +710,17 @@ const WorkflowConvertModal = ({
                 gap: 10,
                 marginTop: 20,
                 paddingTop: 14,
-                borderTop: '1px solid rgba(148, 163, 184, 0.15)'
+                borderTop: `1px solid ${borderColor}`
               }}>
                 <button
                   type="button"
+                  className="btn btn-secondary"
                   onClick={onClose}
                   disabled={loading}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.12)',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    color: '#ffffff',
-                    borderRadius: '8px',
                     padding: '8px 20px',
                     fontSize: '0.85rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.22)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                    fontWeight: 600
                   }}
                 >
                   Cancel
@@ -718,7 +744,7 @@ const WorkflowConvertModal = ({
                     <span>Processing...</span>
                   ) : (
                     <>
-                      <span>{meta.btnText}</span>
+                      <span>{meta.btnText || meta.submitLabel || 'Execute'}</span>
                       <Icon name="arrowRight" size={15} />
                     </>
                   )}

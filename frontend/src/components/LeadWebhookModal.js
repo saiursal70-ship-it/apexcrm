@@ -3,8 +3,10 @@ import ReactDOM from 'react-dom';
 import Icon from './Icon';
 import { ingestLeadWebhook } from '../api/api';
 import { animateModalEnter } from '../utils/animations';
+import { useTheme } from '../context/ThemeContext';
 
 const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
+  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('simulator'); // 'simulator' | 'code'
   const [copiedType, setCopiedType] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -63,8 +65,11 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
 
   useEffect(() => {
     if (isOpen) {
+      document.body.style.overflow = 'hidden';
       setResult(null);
       animateModalEnter(modalRef.current, overlayRef.current);
+    } else {
+      document.body.style.overflow = '';
     }
   }, [isOpen]);
 
@@ -75,8 +80,30 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  // Theme styling tokens
+  const containerBg = isDark ? '#0f172a' : '#ffffff';
+  const headerBg = isDark ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99))' : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)';
+  const tabBg = isDark ? 'rgba(15, 23, 42, 0.6)' : '#f8fafc';
+  const bodyBg = isDark ? '#0f172a' : '#ffffff';
+  const inputBg = isDark ? 'rgba(30, 41, 59, 0.8)' : '#f8fafc';
+  const inputBorder = isDark ? 'rgba(148, 163, 184, 0.25)' : '#cbd5e1';
+  const inputColor = isDark ? '#f8fafc' : '#0f172a';
+  const labelColor = isDark ? '#cbd5e1' : '#334155';
+  const titleColor = isDark ? '#f8fafc' : '#0f172a';
+  const subtextColor = isDark ? '#94a3b8' : '#64748b';
+  const borderColor = isDark ? 'rgba(148, 163, 184, 0.15)' : '#e2e8f0';
+  const bannerBg = isDark ? 'rgba(30, 41, 59, 0.7)' : '#f1f5f9';
+  const presetBtnBg = isDark ? 'rgba(255, 255, 255, 0.06)' : '#f1f5f9';
+  const presetBtnBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : '#e2e8f0';
+  const presetBtnColor = isDark ? '#f8fafc' : '#334155';
 
   if (!isOpen) return null;
 
@@ -172,19 +199,20 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
           maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#0f172a',
+          backgroundColor: containerBg,
+          color: titleColor,
           borderRadius: '18px',
-          border: '1px solid rgba(148, 163, 184, 0.25)',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.75)',
+          border: `1px solid ${borderColor}`,
+          boxShadow: isDark ? '0 25px 60px -15px rgba(0, 0, 0, 0.75)' : '0 20px 45px rgba(0, 0, 0, 0.12)',
           overflow: 'hidden',
           margin: 'auto'
         }}
       >
         {/* Header */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99))',
+          background: headerBg,
           padding: '20px 24px',
-          borderBottom: '1px solid rgba(148, 163, 184, 0.15)',
+          borderBottom: `1px solid ${borderColor}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
@@ -205,7 +233,7 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
               </span>
               <span style={{
                 background: 'rgba(59, 130, 246, 0.15)',
-                color: '#60a5fa',
+                color: '#3b82f6',
                 fontSize: '0.7rem',
                 fontWeight: 700,
                 padding: '2px 8px',
@@ -215,10 +243,10 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
                 ZERO-CONFIG INGESTION
               </span>
             </div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: titleColor, letterSpacing: '-0.02em' }}>
               📥 Inbound Lead Webhook &amp; Simulator
             </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#94a3b8' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: subtextColor }}>
               Connect external contact forms, landing pages, and marketing funnels directly into your CRM.
             </p>
           </div>
@@ -227,10 +255,10 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
             type="button"
             onClick={onClose}
             style={{
-              background: 'rgba(255, 255, 255, 0.08)',
+              background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
               border: 'none',
               borderRadius: '8px',
-              color: '#94a3b8',
+              color: subtextColor,
               cursor: 'pointer',
               padding: '6px',
               display: 'flex',
@@ -245,8 +273,8 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
         {/* Tab Switcher */}
         <div style={{
           display: 'flex',
-          borderBottom: '1px solid rgba(148, 163, 184, 0.15)',
-          background: 'rgba(15, 23, 42, 0.6)',
+          borderBottom: `1px solid ${borderColor}`,
+          background: tabBg,
           padding: '0 24px'
         }}>
           <button
@@ -256,7 +284,7 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
               padding: '12px 18px',
               fontSize: '0.85rem',
               fontWeight: 700,
-              color: activeTab === 'simulator' ? '#60a5fa' : '#94a3b8',
+              color: activeTab === 'simulator' ? '#3b82f6' : subtextColor,
               borderBottom: activeTab === 'simulator' ? '2px solid #3b82f6' : '2px solid transparent',
               background: 'none',
               border: 'none',
@@ -275,7 +303,7 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
               padding: '12px 18px',
               fontSize: '0.85rem',
               fontWeight: 700,
-              color: activeTab === 'code' ? '#60a5fa' : '#94a3b8',
+              color: activeTab === 'code' ? '#3b82f6' : subtextColor,
               borderBottom: activeTab === 'code' ? '2px solid #3b82f6' : '2px solid transparent',
               background: 'none',
               border: 'none',
@@ -295,12 +323,12 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
           overflowY: 'auto',
           flex: 1,
           maxHeight: 'calc(92vh - 160px)',
-          background: '#0f172a'
+          background: bodyBg
         }}>
           {/* Webhook Endpoint Banner */}
           <div style={{
-            background: 'rgba(30, 41, 59, 0.7)',
-            border: '1px solid rgba(148, 163, 184, 0.25)',
+            background: bannerBg,
+            border: `1px solid ${borderColor}`,
             borderRadius: 10,
             padding: '10px 14px',
             marginBottom: 16,
@@ -313,7 +341,7 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
               <span style={{ background: '#22c55e', color: '#000', fontSize: '0.68rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>
                 POST
               </span>
-              <code style={{ fontSize: '0.82rem', color: '#e2e8f0', wordBreak: 'break-all' }}>
+              <code style={{ fontSize: '0.82rem', color: isDark ? '#e2e8f0' : '#1e293b', wordBreak: 'break-all' }}>
                 {webhookUrl}
               </code>
             </div>
@@ -331,7 +359,7 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
             <div>
               {/* Presets */}
               <div style={{ marginBottom: 14 }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 8 }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: subtextColor, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 8 }}>
                   Quick Test Presets:
                 </span>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -341,9 +369,9 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
                       type="button"
                       onClick={() => handlePresetSelect(p)}
                       style={{
-                        background: 'rgba(255, 255, 255, 0.06)',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
-                        color: '#f8fafc',
+                        background: presetBtnBg,
+                        border: `1px solid ${presetBtnBorder}`,
+                        color: presetBtnColor,
                         padding: '6px 12px',
                         borderRadius: 8,
                         fontSize: '0.78rem',
@@ -352,7 +380,7 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
                         transition: 'all 0.15s'
                       }}
                       onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#3b82f6')}
-                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = presetBtnBorder)}
                     >
                       {p.label}
                     </button>
@@ -364,90 +392,90 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
               <form onSubmit={handleSubmitSimulation}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#cbd5e1', marginBottom: 4 }}>Full Name</label>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: labelColor, marginBottom: 4 }}>Full Name</label>
                     <input
                       type="text"
                       className="form-control"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
-                      style={{ width: '100%', background: 'rgba(30, 41, 59, 0.8)', color: '#fff', border: '1px solid rgba(148, 163, 184, 0.25)', borderRadius: 8, padding: '8px 12px' }}
+                      style={{ width: '100%', background: inputBg, color: inputColor, border: `1px solid ${inputBorder}`, borderRadius: 8, padding: '8px 12px' }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#cbd5e1', marginBottom: 4 }}>Company / Organization</label>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: labelColor, marginBottom: 4 }}>Company / Organization</label>
                     <input
                       type="text"
                       className="form-control"
                       value={formData.company}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                      style={{ width: '100%', background: 'rgba(30, 41, 59, 0.8)', color: '#fff', border: '1px solid rgba(148, 163, 184, 0.25)', borderRadius: 8, padding: '8px 12px' }}
+                      style={{ width: '100%', background: inputBg, color: inputColor, border: `1px solid ${inputBorder}`, borderRadius: 8, padding: '8px 12px' }}
                     />
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#cbd5e1', marginBottom: 4 }}>Email Address</label>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: labelColor, marginBottom: 4 }}>Email Address</label>
                     <input
                       type="email"
                       className="form-control"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
-                      style={{ width: '100%', background: 'rgba(30, 41, 59, 0.8)', color: '#fff', border: '1px solid rgba(148, 163, 184, 0.25)', borderRadius: 8, padding: '8px 12px' }}
+                      style={{ width: '100%', background: inputBg, color: inputColor, border: `1px solid ${inputBorder}`, borderRadius: 8, padding: '8px 12px' }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#cbd5e1', marginBottom: 4 }}>Phone Number</label>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: labelColor, marginBottom: 4 }}>Phone Number</label>
                     <input
                       type="text"
                       className="form-control"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      style={{ width: '100%', background: 'rgba(30, 41, 59, 0.8)', color: '#fff', border: '1px solid rgba(148, 163, 184, 0.25)', borderRadius: 8, padding: '8px 12px' }}
+                      style={{ width: '100%', background: inputBg, color: inputColor, border: `1px solid ${inputBorder}`, borderRadius: 8, padding: '8px 12px' }}
                     />
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#cbd5e1', marginBottom: 4 }}>Service of Interest</label>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: labelColor, marginBottom: 4 }}>Service of Interest</label>
                     <input
                       type="text"
                       className="form-control"
                       value={formData.service}
                       onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-                      style={{ width: '100%', background: 'rgba(30, 41, 59, 0.8)', color: '#fff', border: '1px solid rgba(148, 163, 184, 0.25)', borderRadius: 8, padding: '8px 12px' }}
+                      style={{ width: '100%', background: inputBg, color: inputColor, border: `1px solid ${inputBorder}`, borderRadius: 8, padding: '8px 12px' }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#cbd5e1', marginBottom: 4 }}>Estimated Budget (₹)</label>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: labelColor, marginBottom: 4 }}>Estimated Budget (₹)</label>
                     <input
                       type="number"
                       className="form-control"
                       value={formData.budget}
                       onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                      style={{ width: '100%', background: 'rgba(30, 41, 59, 0.8)', color: '#fff', border: '1px solid rgba(148, 163, 184, 0.25)', borderRadius: 8, padding: '8px 12px' }}
+                      style={{ width: '100%', background: inputBg, color: inputColor, border: `1px solid ${inputBorder}`, borderRadius: 8, padding: '8px 12px' }}
                     />
                   </div>
                 </div>
 
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#cbd5e1', marginBottom: 4 }}>Inquiry Message / Scope</label>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: labelColor, marginBottom: 4 }}>Inquiry Message / Scope</label>
                   <textarea
                     className="form-control"
                     rows={3}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    style={{ width: '100%', background: 'rgba(30, 41, 59, 0.8)', color: '#fff', border: '1px solid rgba(148, 163, 184, 0.25)', borderRadius: 8, padding: '8px 12px', resize: 'vertical' }}
+                    style={{ width: '100%', background: inputBg, color: inputColor, border: `1px solid ${inputBorder}`, borderRadius: 8, padding: '8px 12px', resize: 'vertical' }}
                   />
                 </div>
 
                 {/* Result notification */}
                 {result && (
                   <div style={{
-                    background: 'rgba(16, 185, 129, 0.12)',
+                    background: isDark ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.08)',
                     border: '1px solid rgba(16, 185, 129, 0.35)',
                     borderRadius: 10,
                     padding: '12px 16px',
@@ -460,10 +488,10 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ color: '#10b981', fontWeight: 800 }}>✓ Live Ingestion Success:</span>
-                        <strong style={{ color: '#f8fafc', fontSize: '0.85rem' }}>Lead #{result.data?.leadId} Captured</strong>
+                        <strong style={{ color: titleColor, fontSize: '0.85rem' }}>Lead #{result.data?.leadId} Captured</strong>
                       </div>
-                      <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
-                        Lead Quality Score: <strong style={{ color: '#38bdf8' }}>{result.data?.qualityScore}/100</strong> • Urgent follow-up task #{result.data?.taskId} created.
+                      <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: subtextColor }}>
+                        Lead Quality Score: <strong style={{ color: '#0284c7' }}>{result.data?.qualityScore}/100</strong> • Urgent follow-up task #{result.data?.taskId} created.
                       </p>
                     </div>
                     <span style={{ background: '#10b981', color: '#fff', fontSize: '0.7rem', fontWeight: 700, padding: '4px 8px', borderRadius: 20 }}>
@@ -500,7 +528,7 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
             <div>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f8fafc' }}>cURL Command</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: titleColor }}>cURL Command</span>
                   <button
                     type="button"
                     className="btn btn-secondary btn-sm"
@@ -511,12 +539,12 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
                   </button>
                 </div>
                 <pre style={{
-                  background: '#020617',
-                  border: '1px solid rgba(148, 163, 184, 0.2)',
+                  background: isDark ? '#020617' : '#f1f5f9',
+                  border: `1px solid ${borderColor}`,
                   borderRadius: 8,
                   padding: 12,
                   fontSize: '0.75rem',
-                  color: '#38bdf8',
+                  color: isDark ? '#38bdf8' : '#0369a1',
                   overflowX: 'auto',
                   fontFamily: 'monospace'
                 }}>
@@ -526,7 +554,7 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
 
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f8fafc' }}>JavaScript / Frontend Fetch (WordPress / Webflow / Next.js)</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: titleColor }}>JavaScript / Frontend Fetch (WordPress / Webflow / Next.js)</span>
                   <button
                     type="button"
                     className="btn btn-secondary btn-sm"
@@ -537,12 +565,12 @@ const LeadWebhookModal = ({ isOpen, onClose, onSuccess }) => {
                   </button>
                 </div>
                 <pre style={{
-                  background: '#020617',
-                  border: '1px solid rgba(148, 163, 184, 0.2)',
+                  background: isDark ? '#020617' : '#f1f5f9',
+                  border: `1px solid ${borderColor}`,
                   borderRadius: 8,
                   padding: 12,
                   fontSize: '0.75rem',
-                  color: '#a78bfa',
+                  color: isDark ? '#a78bfa' : '#6d28d9',
                   overflowX: 'auto',
                   fontFamily: 'monospace'
                 }}>

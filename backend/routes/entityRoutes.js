@@ -59,4 +59,16 @@ router.use('/workspace-types', createCrudRouter('workspace_types', [
     'type_name', 'type_code', 'description'
 ]));
 
+router.use('/clients', createCrudRouter('clients', [
+    'client_code', 'client_name', 'workspace', 'email', 'phone', 'status'
+]));
+
+router.use('/projects', createCrudRouter('projects', [
+    'project_code', 'project_name', 'workspace', 'status'
+]));
+
+router.use('/boards', createCrudRouter('boards', [
+    'board_code', 'board_name', 'project', 'board_type'
+]));
+
 module.exports = router;

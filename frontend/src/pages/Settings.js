@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Icon from '../components/Icon';
 import { useAuth } from '../context/AuthContext';
@@ -19,10 +19,28 @@ const DEFAULT_ROLES = [
 
 const Settings = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState('profile');
+  
+  // Persistent active tab state synced with URL & localStorage
+  const [activeTab, setActiveTab] = useState(() => {
+    return searchParams.get('tab') || localStorage.getItem('crm_settings_tab') || 'profile';
+  });
   const [toastMsg, setToastMsg] = useState(null);
+
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+  }, [searchParams, activeTab]);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setSearchParams({ tab: tabId }, { replace: true });
+    try { localStorage.setItem('crm_settings_tab', tabId); } catch (e) {}
+  };
 
   useEffect(() => {
     animateStagger('.settings-card, .role-pill-card, .form-group', {
@@ -228,7 +246,7 @@ const Settings = () => {
   };
 
   const navItems = [
-    { id: 'admin-workspace', label: 'Admin Workspace ⚡', icon: 'grid', desc: 'Agile Sprint Board & Admin Control' },
+    { id: 'admin-workspace', label: 'Workshop ⚡', icon: 'grid', desc: 'Agile Sprint Board & Team Workshop' },
     { id: 'users-rbac', label: 'Users & RBAC 🛡️', icon: 'shield', desc: 'Role designation & department settings' },
     { id: 'profile', label: 'My Profile', icon: 'user', desc: 'Edit personal details and role' },
     { id: 'company', label: 'Company Profile', icon: 'building', desc: 'Manage company & GST details' },
@@ -258,7 +276,7 @@ const Settings = () => {
                 key={item.id}
                 type="button"
                 className={`subnav-item-btn ${activeTab === item.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleTabChange(item.id)}
               >
                 <Icon name={item.icon} size={18} />
                 <div className="subnav-item-text">
@@ -1231,8 +1249,8 @@ const Settings = () => {
               <div className="section-header" style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
-                    <h2>Admin Workspace &amp; Sprint Board</h2>
-                    <p>Agile project workspace for administrative users only. Manage active sprints, drag-and-drop task cards, Epics, and team assignments.</p>
+                    <h2>Workshop</h2>
+                    <p>Agile project workshop &amp; sprint board. Manage active sprints, drag-and-drop task cards, Epics, and team assignments.</p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span className="admin-status-badge">⚡ ADMIN ACCESS GRANTED</span>

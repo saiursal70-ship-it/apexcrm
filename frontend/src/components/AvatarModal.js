@@ -46,6 +46,18 @@ const AvatarModal = ({ config, onSave, onClose }) => {
     glasses: config?.glasses || false,
   });
 
+  React.useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   const handleSave = () => {
     onSave(avatarState);
     onClose();

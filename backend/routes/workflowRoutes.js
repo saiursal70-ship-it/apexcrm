@@ -308,22 +308,77 @@ router.post('/invoice-to-project', async (req, res) => {
     const finalClient = client_name || invoice.client_account || 'Client Project';
     const finalProjectName = project_name || `${finalClient} Execution`;
 
-    // Standard sprint deliverables
+    // Standard sprint deliverables with professional team assignments
     const defaultSprintDeliverables = [
-      { keySuffix: 101, title: `Kickoff & Architecture Review for ${finalClient}`, epic: 'Planning', type: 'story', points: 3, priority: 'High', status: 'IN PROGRESS' },
-      { keySuffix: 102, title: `Core Module Development & Customizations`, epic: 'Core Dev', type: 'story', points: 8, priority: 'High', status: 'TO DO' },
-      { keySuffix: 103, title: `API Integration & Payment Gateway Setup`, epic: 'Integrations', type: 'task', points: 5, priority: 'Medium', status: 'TO DO' },
-      { keySuffix: 104, title: `Quality Assurance, Security Scan & UAT Testing`, epic: 'Testing', type: 'bug', points: 3, priority: 'High', status: 'TO DO' },
-      { keySuffix: 105, title: `Final Client Handover & Production Go-Live`, epic: 'Release', type: 'story', points: 5, priority: 'High', status: 'TO DO' }
+      { 
+        keySuffix: 101, 
+        title: `Kickoff & Architecture Review for ${finalClient}`, 
+        epic: 'Planning', 
+        type: 'story', 
+        points: 3, 
+        priority: 'High', 
+        status: 'IN PROGRESS',
+        assignee_name: 'Alex Rivera',
+        assignee_role: 'Principal Cloud Architect',
+        assignee_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200'
+      },
+      { 
+        keySuffix: 102, 
+        title: `Core Module Development & Customizations`, 
+        epic: 'Core Dev', 
+        type: 'story', 
+        points: 8, 
+        priority: 'High', 
+        status: 'TO DO',
+        assignee_name: 'Michael Vance',
+        assignee_role: 'Senior Full-Stack Lead',
+        assignee_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200'
+      },
+      { 
+        keySuffix: 103, 
+        title: `API Integration & Payment Gateway Setup`, 
+        epic: 'Integrations', 
+        type: 'task', 
+        points: 5, 
+        priority: 'Medium', 
+        status: 'TO DO',
+        assignee_name: 'Elena Rostova',
+        assignee_role: 'Senior UI/UX & Frontend Lead',
+        assignee_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
+      },
+      { 
+        keySuffix: 104, 
+        title: `Quality Assurance, Security Scan & UAT Testing`, 
+        epic: 'Testing', 
+        type: 'bug', 
+        points: 3, 
+        priority: 'High', 
+        status: 'TO DO',
+        assignee_name: 'Claire Redfield',
+        assignee_role: 'QA Lead & Security Specialist',
+        assignee_avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200'
+      },
+      { 
+        keySuffix: 105, 
+        title: `Final Client Handover & Production Go-Live`, 
+        epic: 'Release', 
+        type: 'story', 
+        points: 5, 
+        priority: 'High', 
+        status: 'TO DO',
+        assignee_name: 'Sarah Jenkins',
+        assignee_role: 'Product Lead & Scrum Master',
+        assignee_avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200'
+      }
     ];
 
     const randomPrefix = finalClient.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase() || 'PRJ';
 
     for (const item of defaultSprintDeliverables) {
       await db.query(
-        `INSERT INTO ` + '`sprint_tasks`' + ` (task_key, title, epic, task_type, points, priority, status, assignee_name, project_name)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'Admin User', ?)`,
-        [`${randomPrefix}-${item.keySuffix}`, item.title, item.epic, item.type, item.points, item.priority, item.status, finalProjectName]
+        `INSERT INTO ` + '`sprint_tasks`' + ` (task_key, title, epic, task_type, points, priority, status, assignee_name, assignee_role, assignee_avatar, project_name)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [`${randomPrefix}-${item.keySuffix}`, item.title, item.epic, item.type, item.points, item.priority, item.status, item.assignee_name, item.assignee_role, item.assignee_avatar, finalProjectName]
       ).catch(() => {});
     }
 

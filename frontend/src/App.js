@@ -26,10 +26,11 @@ function App() {
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/tasks" element={<ProtectedRoute><AdminWorkspace /></ProtectedRoute>} />
             <Route path="/admin/workspace" element={<ProtectedRoute><AdminWorkspace /></ProtectedRoute>} />
             <Route path="/sprint-board" element={<ProtectedRoute><AdminWorkspace /></ProtectedRoute>} />
 
-            {/* Generic CRUD modules: leads, contacts, accounts, deals, tasks,
+            {/* Generic CRUD modules: leads, contacts, accounts, deals,
                 appointments, products, invoices, campaigns, tickets */}
             <Route path="/:entity" element={<ProtectedRoute><EntityPage /></ProtectedRoute>} />
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import Icon from './Icon';
 import ApexDevLogo from './ApexDevLogo';
 import { approveQuotationWorkflow } from '../api/api';
@@ -43,6 +44,7 @@ const formatDateSafe = (val, fallback = '—') => {
 
 const QuotationPrintModal = ({ quotation, onClose, onWhatsApp, onEmail }) => {
   const [converting, setConverting] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const modalRef = useRef(null);
   const overlayRef = useRef(null);
 
@@ -53,13 +55,21 @@ const QuotationPrintModal = ({ quotation, onClose, onWhatsApp, onEmail }) => {
   }, [quotation]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && quotation) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    if (quotation) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          onClose();
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
   }, [quotation, onClose]);
 
   if (!quotation) return null;
@@ -89,52 +99,74 @@ const QuotationPrintModal = ({ quotation, onClose, onWhatsApp, onEmail }) => {
 
   const statusClass = String(quotation.status || 'draft').toLowerCase().replace(/\s+/g, '-');
 
-  return (
+  return ReactDOM.createPortal(
     <div className="invoice-modal-overlay" ref={overlayRef}>
-      <div className="invoice-modal-container" ref={modalRef}>
+      <div className={`invoice-modal-container ${isMaximized ? 'modal-maximized' : ''}`} ref={modalRef}>
         {/* Top Control Action Bar (Hidden when printing) */}
-        <div className="invoice-action-bar no-print">
+        <div className="invoice-action-bar no-print" onDoubleClick={() => setIsMaximized(!isMaximized)}>
           <div className="action-bar-title">
             <Icon name="quotation" size={18} />
             <span>Commercial Quotation #{quotation.quotation_number || quotation.id}</span>
           </div>
           <div className="action-bar-buttons" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              className="modal-action-icon-btn btn-maximize"
+              onClick={() => setIsMaximized(!isMaximized)}
+              aria-label={isMaximized ? 'Restore View' : 'Maximize Full Screen'}
+            >
+              <span style={{ fontSize: '15px', lineHeight: 1 }}>{isMaximized ? '🗗' : '🗖'}</span>
+              <span className="modal-action-tooltip">{isMaximized ? '🗗 Restore View' : '🗖 Maximize Full Screen'}</span>
+            </button>
             {onWhatsApp && (
               <button
                 type="button"
-                className="emoji-action-btn btn-whatsapp-action"
+                className="modal-action-icon-btn btn-whatsapp-action"
                 onClick={() => onWhatsApp(quotation)}
                 aria-label="WhatsApp Follow-up"
               >
-                <Icon name="whatsapp" size={16} />
-                <span className="emoji-hover-tooltip">💬 WhatsApp Follow-up</span>
+                <Icon name="whatsapp" size={17} />
+                <span className="modal-action-tooltip">💬 WhatsApp Follow-up</span>
               </button>
             )}
             {onEmail && (
               <button
                 type="button"
-                className="emoji-action-btn btn-email-action"
+                className="modal-action-icon-btn btn-email-action"
                 onClick={() => onEmail(quotation)}
                 aria-label="Gmail / Email Follow-up"
               >
-                <Icon name="email" size={16} />
-                <span className="emoji-hover-tooltip">✉️ Gmail / Email</span>
+                <Icon name="email" size={17} />
+                <span className="modal-action-tooltip">✉️ Gmail / Email</span>
               </button>
             )}
             <button
               type="button"
-              className="btn btn-success print-trigger-btn"
-              style={{ background: '#10b981', color: '#ffffff' }}
+              className="modal-action-icon-btn btn-convert"
               onClick={handleConvertToInvoice}
               disabled={converting}
+              aria-label="Convert to Tax Invoice"
             >
-              <Icon name="invoice" size={16} /> {converting ? 'Converting...' : '⚡ Convert to Tax Invoice'}
+              <Icon name="invoice" size={17} />
+              <span className="modal-action-tooltip">{converting ? 'Converting...' : '⚡ Convert to Tax Invoice'}</span>
             </button>
-            <button type="button" className="btn btn-primary print-trigger-btn" onClick={handlePrint}>
-              <Icon name="printer" size={16} /> Print / Save PDF
+            <button
+              type="button"
+              className="modal-action-icon-btn btn-print"
+              onClick={handlePrint}
+              aria-label="Print / Save PDF"
+            >
+              <Icon name="printer" size={17} />
+              <span className="modal-action-tooltip">🖶 Print / Save PDF</span>
             </button>
-            <button type="button" className="btn btn-outline modal-close-btn" onClick={onClose}>
-              <Icon name="close" size={16} /> Close
+            <button
+              type="button"
+              className="modal-action-icon-btn btn-close"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              <Icon name="close" size={17} />
+              <span className="modal-action-tooltip">✕ Close</span>
             </button>
           </div>
         </div>
@@ -237,9 +269,9 @@ const QuotationPrintModal = ({ quotation, onClose, onWhatsApp, onEmail }) => {
                 <span>SGST (9%):</span>
                 <span>₹{sgst.toLocaleString('en-IN')}</span>
               </div>
-              <div className="calc-row total-row" style={{ background: 'linear-gradient(135deg, #7c3aed, #4c1d95)' }}>
-                <span>Total Estimated Value:</span>
-                <span>₹{totalAmount.toLocaleString('en-IN')}</span>
+              <div className="calc-row total-row" style={{ background: 'linear-gradient(135deg, #7c3aed, #4c1d95)', color: '#ffffff', padding: '6px 10px', borderRadius: '6px' }}>
+                <span style={{ color: '#ffffff' }}>Total Estimated Value:</span>
+                <span style={{ color: '#ffffff', fontWeight: 800 }}>₹{totalAmount.toLocaleString('en-IN')}</span>
               </div>
             </div>
           </div>
@@ -278,7 +310,8 @@ const QuotationPrintModal = ({ quotation, onClose, onWhatsApp, onEmail }) => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

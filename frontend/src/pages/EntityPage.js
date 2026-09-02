@@ -589,10 +589,16 @@ const EntityPage = () => {
                   style={{ cursor: 'pointer' }}
                   onClick={(e) => {
                     if (e.target.closest('.table-actions')) return;
-                    setDrawerRecord(r);
-                    setDrawerInitialEdit(false);
+                    if (entity === 'quotations') {
+                      setSelectedQuotationForPrint(r);
+                    } else if (entity === 'invoices') {
+                      setSelectedInvoiceForPrint(r);
+                    } else {
+                      setDrawerRecord(r);
+                      setDrawerInitialEdit(false);
+                    }
                   }}
-                  title="Click to view details in Side Drawer"
+                  title={entity === 'quotations' ? 'Click to open Commercial Quotation' : entity === 'invoices' ? 'Click to open Tax Invoice' : 'Click to view details in Side Drawer'}
                 >
                   <td>{r.id}</td>
                   {config.columns.map((c, cIdx) => <td key={`td-${r.id || rIdx}-${c}-${cIdx}`}>{formatCell(r, c)}</td>)}

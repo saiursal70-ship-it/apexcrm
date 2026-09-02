@@ -222,6 +222,7 @@ const WhatsAppModal = ({ recipient, onClose }) => {
   }, [isTimerActive, countdown, dispatchMethod]);
 
   useEffect(() => {
+    document.body.style.overflow = 'hidden';
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         if (isTimerActive) cancelTimer();
@@ -229,7 +230,10 @@ const WhatsAppModal = ({ recipient, onClose }) => {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isTimerActive, onClose]);
 
   return ReactDOM.createPortal(

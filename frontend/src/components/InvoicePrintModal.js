@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import Icon from './Icon';
 import ApexDevLogo from './ApexDevLogo';
 import { animateModalEnter } from '../utils/animations';
@@ -41,6 +42,7 @@ const formatDateSafe = (val, fallback = '—') => {
 };
 
 const InvoicePrintModal = ({ invoice, onClose, onWhatsApp, onEmail }) => {
+  const [isMaximized, setIsMaximized] = useState(false);
   const modalRef = useRef(null);
   const overlayRef = useRef(null);
 
@@ -51,13 +53,21 @@ const InvoicePrintModal = ({ invoice, onClose, onWhatsApp, onEmail }) => {
   }, [invoice]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && invoice) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    if (invoice) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          onClose();
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
   }, [invoice, onClose]);
 
   if (!invoice) return null;
@@ -79,43 +89,64 @@ const InvoicePrintModal = ({ invoice, onClose, onWhatsApp, onEmail }) => {
   const cgst = Math.round(totalGst / 2);
   const sgst = totalGst - cgst;
 
-  return (
+  return ReactDOM.createPortal(
     <div className="invoice-modal-overlay" ref={overlayRef}>
-      <div className="invoice-modal-container" ref={modalRef}>
+      <div className={`invoice-modal-container ${isMaximized ? 'modal-maximized' : ''}`} ref={modalRef}>
         {/* Top Control Action Bar (Hidden when printing) */}
-        <div className="invoice-action-bar no-print">
+        <div className="invoice-action-bar no-print" onDoubleClick={() => setIsMaximized(!isMaximized)}>
           <div className="action-bar-title">
             <Icon name="invoice" size={18} />
             <span>Tax Invoice #{invoice.invoice_number}</span>
           </div>
           <div className="action-bar-buttons" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              className="modal-action-icon-btn btn-maximize"
+              onClick={() => setIsMaximized(!isMaximized)}
+              aria-label={isMaximized ? 'Restore View' : 'Maximize Full Screen'}
+            >
+              <span style={{ fontSize: '15px', lineHeight: 1 }}>{isMaximized ? '🗗' : '🗖'}</span>
+              <span className="modal-action-tooltip">{isMaximized ? '🗗 Restore View' : '🗖 Maximize Full Screen'}</span>
+            </button>
             {onWhatsApp && (
               <button
                 type="button"
-                className="emoji-action-btn btn-whatsapp-action"
+                className="modal-action-icon-btn btn-whatsapp-action"
                 onClick={() => onWhatsApp(invoice)}
                 aria-label="WhatsApp Reminder"
               >
-                <Icon name="whatsapp" size={16} />
-                <span className="emoji-hover-tooltip">💬 WhatsApp Reminder</span>
+                <Icon name="whatsapp" size={17} />
+                <span className="modal-action-tooltip">💬 WhatsApp Reminder</span>
               </button>
             )}
             {onEmail && (
               <button
                 type="button"
-                className="emoji-action-btn btn-email-action"
+                className="modal-action-icon-btn btn-email-action"
                 onClick={() => onEmail(invoice)}
                 aria-label="Send via Gmail"
               >
-                <Icon name="email" size={16} />
-                <span className="emoji-hover-tooltip">✉️ Send via Gmail</span>
+                <Icon name="email" size={17} />
+                <span className="modal-action-tooltip">✉️ Send via Gmail</span>
               </button>
             )}
-            <button type="button" className="btn btn-primary print-trigger-btn" onClick={handlePrint}>
-              <Icon name="printer" size={16} /> Print / Save PDF
+            <button
+              type="button"
+              className="modal-action-icon-btn btn-print"
+              onClick={handlePrint}
+              aria-label="Print / Save PDF"
+            >
+              <Icon name="printer" size={17} />
+              <span className="modal-action-tooltip">🖶 Print / Save PDF</span>
             </button>
-            <button type="button" className="btn btn-outline modal-close-btn" onClick={onClose}>
-              <Icon name="close" size={16} /> Close
+            <button
+              type="button"
+              className="modal-action-icon-btn btn-close"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              <Icon name="close" size={17} />
+              <span className="modal-action-tooltip">✕ Close</span>
             </button>
           </div>
         </div>
@@ -268,7 +299,8 @@ const InvoicePrintModal = ({ invoice, onClose, onWhatsApp, onEmail }) => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

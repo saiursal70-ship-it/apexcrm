@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Icon from './Icon';
 import ApexDevLogo from './ApexDevLogo';
 import { useAuth } from '../context/AuthContext';
@@ -75,30 +76,45 @@ const Header = ({ pageTitle, onMenuClick, onAddClick, showAdd, searchValue, onSe
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Notification dropdown state
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem('crm_notifications_list');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {}
-    }
-    return defaultNotifications;
-  });
+  const [notifications, setNotifications] = useState(defaultNotifications);
   const notifRef = useRef(null);
 
   const navigate = useNavigate();
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  // Persist notifications list to localStorage
-  useEffect(() => {
+  // Fetch live notifications from backend
+  const fetchBackendNotifications = React.useCallback(async () => {
     try {
-      localStorage.setItem('crm_notifications_list', JSON.stringify(notifications));
+      const url = user?.email 
+        ? `http://localhost:5001/api/notifications?user_email=${encodeURIComponent(user.email)}`
+        : 'http://localhost:5001/api/notifications';
+      const res = await axios.get(url);
+      if (res.data?.notifications && Array.isArray(res.data.notifications)) {
+        const formatted = res.data.notifications.map(n => ({
+          id: n.id,
+          title: n.title,
+          text: n.message,
+          type: n.type === 'overdue' || n.type === 'escalated' ? 'alert' : n.type === 'comment' ? 'message' : 'check',
+          time: new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          read: Boolean(n.read_status),
+          color: n.type === 'escalated' ? '#ef4444' : n.type === 'overdue' ? '#f59e0b' : '#3b82f6',
+          bg: n.type === 'escalated' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+          route: '/tasks'
+        }));
+        if (formatted.length > 0) {
+          setNotifications(formatted);
+        }
+      }
     } catch (e) {}
-  }, [notifications]);
+  }, [user?.email]);
+
+  useEffect(() => {
+    fetchBackendNotifications();
+    const interval = setInterval(fetchBackendNotifications, 15000);
+    return () => clearInterval(interval);
+  }, [fetchBackendNotifications]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Global Real-time Notification Listener
   useEffect(() => {
@@ -177,28 +193,43 @@ const Header = ({ pageTitle, onMenuClick, onAddClick, showAdd, searchValue, onSe
     toggleTheme();
   };
 
-  const handleNotificationClick = (item) => {
-    // Mark item as read
+  const handleNotificationClick = async (item) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
     );
     setNotifOpen(false);
+    try {
+      await axios.put(`http://localhost:5001/api/notifications/${item.id}/read`);
+    } catch (e) {}
     if (item.route) {
       navigate(item.route);
     }
   };
 
-  const markAllRead = () => {
+  const markAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await axios.put('http://localhost:5001/api/notifications/mark-all-read', {
+        user_email: user?.email
+      });
+    } catch (e) {}
   };
 
-  const removeNotification = (e, id) => {
+  const removeNotification = async (e, id) => {
     e.stopPropagation();
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await axios.delete(`http://localhost:5001/api/notifications/${id}`);
+    } catch (e) {}
   };
 
-  const clearAllNotifications = () => {
+  const clearAllNotifications = async () => {
     setNotifications([]);
+    try {
+      await axios.put('http://localhost:5001/api/notifications/mark-all-read', {
+        user_email: user?.email
+      });
+    } catch (e) {}
   };
 
   const avatarUrl = (user?.profile_image && user.profile_image.startsWith('http'))

@@ -1,60 +1,115 @@
 :root {
+  /* 60% Canvas & Structure Tokens (Light Mode) */
+  --color-bg: #f8fafc;
+  --color-bg-secondary: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-surface-glass: rgba(255, 255, 255, 0.85);
+  --color-border: #e2e8f0;
+  --color-border-subtle: #cbd5e1;
+  --color-border-glass: rgba(226, 232, 240, 0.6);
+
+  /* 30% Typography & Hierarchy Tokens (Light Mode) */
+  --color-text: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-light: #64748b;
+  --color-text-muted: #94a3b8;
+  --color-card-bg: #ffffff;
+  --color-card-border: #e2e8f0;
+
+  /* 10% Restrained Accent & Interactive Callout Tokens */
+  --color-primary: #6366f1;
+  --color-primary-dark: #4f46e5;
+  --color-primary-light: #818cf8;
+  --color-primary-glow: rgba(99, 102, 241, 0.25);
+  --color-primary-subtle: rgba(99, 102, 241, 0.1);
+
+  /* State Tokens */
+  --color-success: #10b981;
+  --color-success-subtle: rgba(16, 185, 129, 0.12);
+  --color-warning: #f59e0b;
+  --color-warning-subtle: rgba(245, 158, 11, 0.12);
+  --color-error: #ef4444;
+  --color-error-subtle: rgba(239, 68, 68, 0.12);
+
+  /* Sidebar Tokens */
   --sidebar-bg: #0f172a;
   --sidebar-bg-hover: #1e293b;
   --sidebar-active: #6366f1;
   --sidebar-text: #94a3b8;
   --sidebar-text-active: #ffffff;
 
-  --color-primary: #6366f1;
-  --color-primary-dark: #4f46e5;
-  --color-primary-glow: rgba(99, 102, 241, 0.25);
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-surface-glass: rgba(255, 255, 255, 0.85);
-  --color-text: #0f172a;
-  --color-text-light: #64748b;
-  --color-border: #e2e8f0;
-  --color-border-glass: rgba(226, 232, 240, 0.6);
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-
+  /* Typography & Layout Metrics */
   --font-heading: 'Plus Jakarta Sans', 'Poppins', sans-serif;
   --font-body: 'Inter', sans-serif;
 
+  --radius-xs: 4px;
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
+  --radius-full: 9999px;
 
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
   --shadow-sm: 0 2px 4px rgba(15, 23, 42, 0.04);
   --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
   --shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.12);
+  --shadow-drawer: -15px 0 50px rgba(15, 23, 42, 0.25);
   --shadow-glow: 0 0 20px var(--color-primary-glow);
 
+  --transition-fast: 0.15s ease;
   --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   --sidebar-width: 250px;
   --sidebar-width-collapsed: 78px;
+  --min-touch-target: 44px;
 }
 
-/* Dark Mode Theme Variables */
-[data-theme="dark"], body.dark-mode {
+/* Dark Mode Theme Variables (Fully Synchronized) */
+[data-theme="dark"], body.dark-mode, body.dark-theme {
+  /* 60% Canvas & Structure Tokens (Dark Mode) */
   --color-bg: #090d16;
+  --color-bg-secondary: #0f172a;
   --color-surface: #0f172a;
-  --color-surface-glass: rgba(15, 23, 42, 0.85);
-  --color-text: #f8fafc;
-  --color-text-light: #94a3b8;
+  --color-surface-hover: #1e293b;
+  --color-surface-glass: rgba(15, 23, 42, 0.88);
   --color-border: #1e293b;
+  --color-border-subtle: #334155;
   --color-border-glass: rgba(255, 255, 255, 0.08);
 
+  /* 30% Typography & Hierarchy Tokens (Dark Mode) */
+  --color-text: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-light: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-card-bg: #0f172a;
+  --color-card-border: #1e293b;
+
+  /* 10% Restrained Accent & Interactive Callout Tokens */
+  --color-primary: #6366f1;
+  --color-primary-dark: #4f46e5;
+  --color-primary-light: #818cf8;
+  --color-primary-glow: rgba(99, 102, 241, 0.35);
+  --color-primary-subtle: rgba(99, 102, 241, 0.2);
+
+  /* State Tokens (Dark Mode) */
+  --color-success: #10b981;
+  --color-success-subtle: rgba(16, 185, 129, 0.2);
+  --color-warning: #f59e0b;
+  --color-warning-subtle: rgba(245, 158, 11, 0.2);
+  --color-error: #ef4444;
+  --color-error-subtle: rgba(239, 68, 68, 0.2);
+
+  /* Sidebar Tokens (Dark Mode) */
   --sidebar-bg: #0b0f19;
   --sidebar-bg-hover: #1e293b;
   --sidebar-active: #6366f1;
   --sidebar-text: #94a3b8;
   --sidebar-text-active: #ffffff;
 
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.65);
+  --shadow-drawer: -15px 0 50px rgba(0, 0, 0, 0.75);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }

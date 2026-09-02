@@ -8,6 +8,10 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const entityRoutes = require('./routes/entityRoutes');
 const kanbanRoutes = require('./routes/kanbanRoutes');
 const workflowRoutes = require('./routes/workflowRoutes');
+const taskRoutes = require('./routes/taskRoutes');
+const userRoutes = require('./routes/userRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const TaskAutomationEngine = require('./utils/taskAutomationEngine');
 
 const app = express();
 
@@ -24,7 +28,23 @@ app.post('/api/leads/webhook', (req, res, next) => {
 });
 app.use('/api/v1/kanban', kanbanRoutes);
 app.use('/api/kanban', kanbanRoutes);
+
+// Dedicated Task Management, Live User Directory & Notifications API
+app.use('/api/tasks', taskRoutes);
+app.use('/api/enterprise-tasks', taskRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationRoutes);
+
 app.use('/api', entityRoutes);
+
+// Background Task Automation Sweeps (Runs every 60s)
+setInterval(async () => {
+    try {
+        await TaskAutomationEngine.runScheduledSweeps();
+    } catch (err) {
+        console.warn('Automation interval check warning:', err.message);
+    }
+}, 60000);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

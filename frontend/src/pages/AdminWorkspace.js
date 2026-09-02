@@ -5,7 +5,117 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import WorkflowConvertModal from '../components/WorkflowConvertModal';
 import EnterpriseAdminEngine from '../components/EnterpriseAdminEngine';
+import TaskManagementApp from '../components/tasks/TaskManagementApp';
 import { animateStagger } from '../utils/animations';
+
+// Professional Agile Project Team Roster
+export const TEAM_MEMBERS = [
+  {
+    id: 'member-1',
+    name: 'Sarah Jenkins',
+    shortName: 'Sarah J.',
+    role: 'Product Lead & Scrum Master',
+    department: 'Product & Delivery',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
+    color: '#6366f1',
+    bgLight: 'rgba(99, 102, 241, 0.14)',
+    status: 'online',
+    initials: 'SJ'
+  },
+  {
+    id: 'member-2',
+    name: 'Alex Rivera',
+    shortName: 'Alex R.',
+    role: 'Principal Cloud Architect',
+    department: 'Architecture & Cloud',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+    color: '#2563eb',
+    bgLight: 'rgba(37, 99, 235, 0.14)',
+    status: 'online',
+    initials: 'AR'
+  },
+  {
+    id: 'member-3',
+    name: 'Elena Rostova',
+    shortName: 'Elena R.',
+    role: 'Senior UI/UX & Frontend Lead',
+    department: 'Design & Frontend',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    color: '#ec4899',
+    bgLight: 'rgba(236, 72, 153, 0.14)',
+    status: 'online',
+    initials: 'ER'
+  },
+  {
+    id: 'member-4',
+    name: 'Michael Vance',
+    shortName: 'Michael V.',
+    role: 'Senior Full-Stack Lead',
+    department: 'Core Platform',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+    color: '#059669',
+    bgLight: 'rgba(5, 150, 105, 0.14)',
+    status: 'online',
+    initials: 'MV'
+  },
+  {
+    id: 'member-5',
+    name: 'Claire Redfield',
+    shortName: 'Claire R.',
+    role: 'QA Lead & Security Specialist',
+    department: 'Quality & Compliance',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+    color: '#d97706',
+    bgLight: 'rgba(217, 119, 6, 0.14)',
+    status: 'online',
+    initials: 'CR'
+  },
+  {
+    id: 'member-6',
+    name: 'David Kim',
+    shortName: 'David K.',
+    role: 'DevOps & Site Reliability Lead',
+    department: 'Infrastructure',
+    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200',
+    color: '#0891b2',
+    bgLight: 'rgba(8, 145, 178, 0.14)',
+    status: 'online',
+    initials: 'DK'
+  }
+];
+
+export const getTeamMemberByName = (name) => {
+  if (!name || name === 'Admin User' || name === 'AU') {
+    return TEAM_MEMBERS[1]; // default to Alex Rivera (Lead Architect)
+  }
+  const clean = name.trim().toLowerCase();
+  const match = TEAM_MEMBERS.find((m) =>
+    m.name.toLowerCase() === clean ||
+    m.shortName.toLowerCase() === clean ||
+    clean.includes(m.name.split(' ')[0].toLowerCase())
+  );
+  if (match) return match;
+
+  const initials = name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  return {
+    id: `dynamic-${clean}`,
+    name,
+    shortName: name.split(' ')[0],
+    role: 'Technical Specialist',
+    department: 'Operations',
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2563eb&color=fff&bold=true`,
+    color: '#2563eb',
+    bgLight: 'rgba(37, 99, 235, 0.14)',
+    status: 'online',
+    initials: initials || 'TM'
+  };
+};
 
 // Initial sample sprint tasks
 const INITIAL_SPRINT_TASKS = [
@@ -20,7 +130,8 @@ const INITIAL_SPRINT_TASKS = [
     priority: 'Low',
     status: 'TO DO',
     assignee_name: 'Elena Rostova',
-    assignee_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+    assignee_role: 'Senior UI/UX & Frontend Lead',
+    assignee_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   },
   {
@@ -33,8 +144,9 @@ const INITIAL_SPRINT_TASKS = [
     subtask_count: 0,
     priority: 'Medium',
     status: 'TO DO',
-    assignee_name: 'Alex Dev',
-    assignee_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150',
+    assignee_name: 'Alex Rivera',
+    assignee_role: 'Principal Cloud Architect',
+    assignee_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   },
   {
@@ -48,7 +160,8 @@ const INITIAL_SPRINT_TASKS = [
     priority: 'Low',
     status: 'TO DO',
     assignee_name: 'Sarah Jenkins',
-    assignee_avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150',
+    assignee_role: 'Product Lead & Scrum Master',
+    assignee_avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   },
   {
@@ -62,7 +175,8 @@ const INITIAL_SPRINT_TASKS = [
     priority: 'High',
     status: 'IN PROGRESS',
     assignee_name: 'Sarah Jenkins',
-    assignee_avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150',
+    assignee_role: 'Product Lead & Scrum Master',
+    assignee_avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   },
   {
@@ -76,7 +190,8 @@ const INITIAL_SPRINT_TASKS = [
     priority: 'High',
     status: 'IN PROGRESS',
     assignee_name: 'Elena Rostova',
-    assignee_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+    assignee_role: 'Senior UI/UX & Frontend Lead',
+    assignee_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   },
   {
@@ -90,7 +205,8 @@ const INITIAL_SPRINT_TASKS = [
     priority: 'High',
     status: 'IN PROGRESS',
     assignee_name: 'Claire Redfield',
-    assignee_avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=150',
+    assignee_role: 'QA Lead & Security Specialist',
+    assignee_avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   },
   {
@@ -104,7 +220,8 @@ const INITIAL_SPRINT_TASKS = [
     priority: 'Low',
     status: 'IN PROGRESS',
     assignee_name: 'Michael Vance',
-    assignee_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
+    assignee_role: 'Senior Full-Stack Lead',
+    assignee_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   },
   {
@@ -118,7 +235,8 @@ const INITIAL_SPRINT_TASKS = [
     priority: 'High',
     status: 'IN REVIEW',
     assignee_name: 'Claire Redfield',
-    assignee_avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=150',
+    assignee_role: 'QA Lead & Security Specialist',
+    assignee_avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   },
   {
@@ -132,7 +250,8 @@ const INITIAL_SPRINT_TASKS = [
     priority: 'Low',
     status: 'DONE',
     assignee_name: 'Elena Rostova',
-    assignee_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+    assignee_role: 'Senior UI/UX & Frontend Lead',
+    assignee_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   },
   {
@@ -146,7 +265,8 @@ const INITIAL_SPRINT_TASKS = [
     priority: 'Low',
     status: 'DONE',
     assignee_name: 'Sarah Jenkins',
-    assignee_avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150',
+    assignee_role: 'Product Lead & Scrum Master',
+    assignee_avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   },
   {
@@ -160,7 +280,8 @@ const INITIAL_SPRINT_TASKS = [
     priority: 'Medium',
     status: 'DONE',
     assignee_name: 'Michael Vance',
-    assignee_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
+    assignee_role: 'Senior Full-Stack Lead',
+    assignee_avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   },
   {
@@ -173,18 +294,11 @@ const INITIAL_SPRINT_TASKS = [
     subtask_count: 0,
     priority: 'High',
     status: 'DONE',
-    assignee_name: 'Sarah Jenkins',
-    assignee_avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150',
+    assignee_name: 'Alex Rivera',
+    assignee_role: 'Principal Cloud Architect',
+    assignee_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
     project_name: 'Beyond Gravity'
   }
-];
-
-const TEAM_MEMBERS = [
-  { name: 'Sarah Jenkins', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150' },
-  { name: 'Alex Dev', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150' },
-  { name: 'Elena Rostova', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150' },
-  { name: 'Michael Vance', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150' },
-  { name: 'Claire Redfield', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=150' }
 ];
 
 const DEFAULT_COLUMNS = [
@@ -213,6 +327,7 @@ const AdminWorkspace = ({ embedded = false }) => {
   const [dragOverCol, setDragOverCol] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState('tasks-automation');
 
   // Dynamic Column State (persisted in localStorage)
   const [columns, setColumns] = useState(() => {
@@ -253,7 +368,8 @@ const AdminWorkspace = ({ embedded = false }) => {
     points: 3,
     priority: 'Medium',
     status: 'TO DO',
-    assignee_name: 'Alex Dev',
+    assignee_name: 'Alex Rivera',
+    assignee_role: 'Principal Cloud Architect',
     assignee_avatar: TEAM_MEMBERS[1].avatar
   });
 
@@ -420,6 +536,29 @@ const AdminWorkspace = ({ embedded = false }) => {
     setWipModalCol(null);
   };
 
+  const anyModalOpen = isNewTaskModalOpen || isSprintModalOpen || isHandoverModalOpen || Boolean(wipModalCol);
+
+  useEffect(() => {
+    if (anyModalOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          setIsNewTaskModalOpen(false);
+          setIsSprintModalOpen(false);
+          setIsHandoverModalOpen(false);
+          setWipModalCol(null);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [anyModalOpen]);
+
   const handleClearTasks = (colKey, e) => {
     e?.stopPropagation();
     setOpenMenuColId(null);
@@ -585,9 +724,79 @@ const AdminWorkspace = ({ embedded = false }) => {
         </div>
       )}
 
-      {/* ENTERPRISE ADMINISTRATION ENGINE SECTION */}
-      <EnterpriseAdminEngine />
+      {/* TOP WORKSPACE NAVIGATION SWITCHER */}
+      <div className="workspace-main-nav-bar" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, background: '#ffffff', padding: '6px 8px', borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          onClick={() => setActiveWorkspaceTab('tasks-automation')}
+          style={{
+            background: activeWorkspaceTab === 'tasks-automation' ? 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)' : 'transparent',
+            color: activeWorkspaceTab === 'tasks-automation' ? '#ffffff' : '#64748b',
+            border: activeWorkspaceTab === 'tasks-automation' ? '1px solid #4338ca' : '1px solid transparent',
+            padding: '8px 18px',
+            borderRadius: 8,
+            fontWeight: 800,
+            fontSize: '0.84rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            boxShadow: activeWorkspaceTab === 'tasks-automation' ? '0 2px 8px rgba(79, 70, 229, 0.28)' : 'none',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <span>⚡ Tasks &amp; Automations</span>
+        </button>
 
+        <button
+          type="button"
+          onClick={() => setActiveWorkspaceTab('enterprise-admin')}
+          style={{
+            background: activeWorkspaceTab === 'enterprise-admin' ? 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)' : 'transparent',
+            color: activeWorkspaceTab === 'enterprise-admin' ? '#ffffff' : '#64748b',
+            border: activeWorkspaceTab === 'enterprise-admin' ? '1px solid #4338ca' : '1px solid transparent',
+            padding: '8px 18px',
+            borderRadius: 8,
+            fontWeight: 800,
+            fontSize: '0.84rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            boxShadow: activeWorkspaceTab === 'enterprise-admin' ? '0 2px 8px rgba(79, 70, 229, 0.28)' : 'none',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <span>🏢 Enterprise Admin &amp; Structure</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveWorkspaceTab('legacy-sprint')}
+          style={{
+            background: activeWorkspaceTab === 'legacy-sprint' ? 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)' : 'transparent',
+            color: activeWorkspaceTab === 'legacy-sprint' ? '#ffffff' : '#64748b',
+            border: activeWorkspaceTab === 'legacy-sprint' ? '1px solid #4338ca' : '1px solid transparent',
+            padding: '8px 18px',
+            borderRadius: 8,
+            fontWeight: 800,
+            fontSize: '0.84rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            boxShadow: activeWorkspaceTab === 'legacy-sprint' ? '0 2px 8px rgba(79, 70, 229, 0.28)' : 'none',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <span>📋 Agile Sprint Board</span>
+        </button>
+      </div>
+
+      {activeWorkspaceTab === 'tasks-automation' && <TaskManagementApp />}
+      {activeWorkspaceTab === 'enterprise-admin' && <EnterpriseAdminEngine />}
+      {activeWorkspaceTab === 'legacy-sprint' && (
+        <>
       {/* TOP BREADCRUMB & HEADER */}
       <div className="jira-header-top">
         <div className="jira-header-title-area">
@@ -605,12 +814,12 @@ const AdminWorkspace = ({ embedded = false }) => {
             </select>
             <span className="separator">/</span>
             <span className="admin-access-badge">
-              <span>⚡</span> ADMIN ACCESS GRANTED
+              <span>⚡</span> WORKSHOP ACCESS
             </span>
           </div>
-          <h1 className="jira-page-title">Admin Workspace &amp; Sprint Board</h1>
+          <h1 className="jira-page-title">Workshop</h1>
           <p className="jira-board-subtitle" style={{ fontSize: '0.88rem', color: '#94a3b8', margin: '2px 0 0', fontWeight: 500 }}>
-            Agile project workspace for administrative users only. Manage active sprints, drag-and-drop task cards, Epics, and team assignments.
+            Agile project workshop &amp; sprint board. Manage active sprints, drag-and-drop task cards, Epics, and team assignments.
           </p>
         </div>
 
@@ -669,7 +878,7 @@ const AdminWorkspace = ({ embedded = false }) => {
             <Icon name="search" size={16} className="search-icon" />
             <input
               type="text"
-              placeholder="Search board..."
+              placeholder="Search tasks, epics, assignees..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -678,21 +887,78 @@ const AdminWorkspace = ({ embedded = false }) => {
             )}
           </div>
 
-          {/* Avatar Filter Group */}
-          <div className="jira-avatar-group">
-            {TEAM_MEMBERS.map((member, idx) => (
-              <button
-                key={`member-${member.name}-${idx}`}
-                type="button"
-                className={`avatar-filter-btn ${selectedAssignee === member.name ? 'active' : ''}`}
-                onClick={() => setSelectedAssignee(selectedAssignee === member.name ? 'All' : member.name)}
-                title={`Filter by ${member.name}`}
-              >
-                <img src={member.avatar} alt={member.name} />
-              </button>
-            ))}
-            <div className="avatar-overflow-badge">+3</div>
+          {/* Professional Screen-Friendly Team Filter & Roster Bar */}
+          <div className="jira-team-roster-bar">
+            <span className="team-filter-label">TEAM:</span>
+            
+            <button
+              type="button"
+              className={`team-pill-all ${selectedAssignee === 'All' ? 'active' : ''}`}
+              onClick={() => setSelectedAssignee('All')}
+              title="Show all team members' tasks"
+            >
+              <span>All</span>
+              <span className="pill-count-chip">{tasks.length}</span>
+            </button>
+
+            <div className="team-members-pills-row">
+              {TEAM_MEMBERS.map((member) => {
+                const memberTaskCount = tasks.filter(
+                  (t) => t.assignee_name && (
+                    t.assignee_name.toLowerCase() === member.name.toLowerCase() ||
+                    t.assignee_name.toLowerCase().includes(member.name.split(' ')[0].toLowerCase())
+                  )
+                ).length;
+                const isSelected = selectedAssignee === member.name;
+
+                return (
+                  <button
+                    key={`team-pill-${member.id}`}
+                    type="button"
+                    className={`team-member-pill ${isSelected ? 'active' : ''}`}
+                    style={{
+                      '--member-theme': member.color,
+                      borderColor: isSelected ? member.color : undefined
+                    }}
+                    onClick={() => setSelectedAssignee(isSelected ? 'All' : member.name)}
+                    title={`${member.name} • ${member.role} (${member.department})\n${memberTaskCount} active tasks`}
+                  >
+                    <div className="pill-avatar-wrap">
+                      <img 
+                        src={member.avatar} 
+                        alt={member.name} 
+                        className="pill-avatar-img"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <span className="pill-avatar-fallback" style={{ display: 'none', background: member.color }}>
+                        {member.initials}
+                      </span>
+                      <span className="status-dot-online" />
+                    </div>
+
+                    <span className="pill-name">{member.name.split(' ')[0]}</span>
+
+                    {memberTaskCount > 0 && (
+                      <span className="pill-count-badge" style={{ background: isSelected ? member.color : undefined }}>
+                        {memberTaskCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Active Filter Indicator Tag */}
+          {selectedAssignee !== 'All' && (
+            <div className="active-filter-tag">
+              <span>Filtered by: <strong>{selectedAssignee}</strong></span>
+              <button type="button" onClick={() => setSelectedAssignee('All')} title="Clear team filter">✕</button>
+            </div>
+          )}
 
           {/* Epic Filter Dropdown */}
           <div className="jira-dropdown-wrap">
@@ -739,7 +1005,7 @@ const AdminWorkspace = ({ embedded = false }) => {
           return (
             <div
               key={`admin-col-${col.id || col.key}-${colIdx}`}
-              className={`jira-kanban-column ${isOver ? 'is-drag-over' : ''} ${isWipExceeded ? 'wip-exceeded' : ''}`}
+              className={`jira-kanban-column col-type-${col.key.toLowerCase().replace(/\s+/g, '-')} ${isOver ? 'is-drag-over' : ''} ${isWipExceeded ? 'wip-exceeded' : ''}`}
               onDragOver={(e) => handleDragOver(e, col.key)}
               onDrop={(e) => handleDrop(e, col.key)}
             >
@@ -891,25 +1157,42 @@ const AdminWorkspace = ({ embedded = false }) => {
                         )}
                       </div>
 
-                      {/* Right Circular Avatar */}
-                      <div className="jira-card-assignee" title={`Assigned to ${task.assignee_name || 'Team member'}`}>
-                        {task.assignee_avatar ? (
-                          <img
-                            src={task.assignee_avatar}
-                            alt={task.assignee_name}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                      {/* Professional Right Circular Avatar with Role & Tooltip */}
+                      {(() => {
+                        const member = getTeamMemberByName(task.assignee_name);
+                        const avatarSrc = task.assignee_avatar || member.avatar;
+                        const roleTitle = task.assignee_role || member.role || 'Specialist';
+                        
+                        return (
+                          <div
+                            className="jira-card-assignee-pro"
+                            title={`Assigned to: ${member.name} (${roleTitle})\nClick to filter tasks by this member`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedAssignee(selectedAssignee === member.name ? 'All' : member.name);
                             }}
-                          />
-                        ) : null}
-                        <span
-                          className="jira-avatar-fallback-initials"
-                          style={{ display: task.assignee_avatar ? 'none' : 'flex' }}
-                        >
-                          {(task.assignee_name || 'AD').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
-                        </span>
-                      </div>
+                          >
+                            <img
+                              src={avatarSrc}
+                              alt={member.name}
+                              className="jira-assignee-img"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                            <span
+                              className="jira-avatar-fallback-initials"
+                              style={{
+                                display: avatarSrc ? 'none' : 'flex',
+                                background: member.color || '#2563eb'
+                              }}
+                            >
+                              {member.initials}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}
@@ -1129,12 +1412,15 @@ const AdminWorkspace = ({ embedded = false }) => {
                         setNewTaskForm({
                           ...newTaskForm,
                           assignee_name: e.target.value,
+                          assignee_role: m ? m.role : 'Specialist',
                           assignee_avatar: m ? m.avatar : ''
                         });
                       }}
                     >
                       {TEAM_MEMBERS.map((tm, tmIdx) => (
-                        <option key={`tm-opt-${tm.name}-${tmIdx}`} value={tm.name}>{tm.name}</option>
+                        <option key={`tm-opt-${tm.name}-${tmIdx}`} value={tm.name}>
+                          {tm.name} — {tm.role}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -1251,6 +1537,8 @@ const AdminWorkspace = ({ embedded = false }) => {
           showToast('🎉 Project delivery completed! Support Ticket & AMC Deal created.');
         }}
       />
+        </>
+      )}
     </div>
   );
 

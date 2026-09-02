@@ -34,6 +34,24 @@ const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) 
     }
   }, [location.pathname]);
 
+  // Automatically adjust layout on screen resize (minimize, maximize, split-screen)
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width <= 768) {
+        setCollapsed(true);
+      } else if (width <= 1024) {
+        setCollapsed(true);
+        setMobileOpen(false);
+      } else {
+        setCollapsed(false);
+        setMobileOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Global Keyboard Shortcut (Ctrl+K or Cmd+K) to open Command Palette
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -84,10 +102,12 @@ const Layout = ({ children, onAddClick, showAdd, searchValue, onSearchChange }) 
           showAdd={showAdd}
         />
         <div className="page-content" ref={pageContentRef}>
-          <div className="content-page-header">
-            <h1 className="content-page-title">{pageTitle}</h1>
-            {pageDescription && <p className="content-page-subtitle">{pageDescription}</p>}
-          </div>
+          {!['/dashboard', '/'].includes(location.pathname) && (
+            <div className="content-page-header">
+              <h1 className="content-page-title">{pageTitle}</h1>
+              {pageDescription && <p className="content-page-subtitle">{pageDescription}</p>}
+            </div>
+          )}
 
           {/* PROFESSIONAL SEARCH BAR POSITIONED BELOW SECTION TITLE */}
           {isSearchActive && (
